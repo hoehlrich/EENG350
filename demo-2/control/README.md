@@ -100,8 +100,8 @@ All at the top of `beacon.ino`. The ones to look at first:
 | `STOP_DISTANCE_FT` | 1.0 | Center of rotation to marker at the stop. Must be under 1.5, and big enough that the front of the robot stays off the beacon |
 | `CAMERA_OFFSET_M` | 0.10 | **Measure:** camera lens ahead of the line between the wheels |
 | `CAMERA_LATENCY_MS` | 80 | Guess at the age of a reading. See the table under "Bringing it up" |
-| `SEARCH_PHI_DOT` | 1.5 rad/s | Search speed. Limited by motion blur. 0.5 rad/s is known to work |
-| `SEARCH_STEP_DEG`, `SEARCH_PAUSE_S` | 40°, 0.4 s | Turn 40°, stop 0.4 s to look, repeat. 0 = turn continuously, which on the robot missed the marker: at 15 frames/s the camera's exposure blurs it while turning |
+| `SEARCH_PHI_DOT` | 0.5 rad/s | Search speed. Limited by motion blur: 1.5 rad/s missed the marker with automatic exposure |
+| `SEARCH_STEP_DEG`, `SEARCH_PAUSE_S` | 0, 0.4 s | 0 = turn continuously. 40 = turn 40°, stop 0.4 s to look, repeat: use it if the marker is missed while turning |
 | `MAX_RHO_DOT`, `RHO_ACCEL` | 0.3 m/s, 0.3 m/s² | 3 times Demo 1's values. A trial takes 7 to 14 s in simulation (15 to 33 s at Demo 1's) |
 | `MAX_PHI_DOT`, `PHI_ACCEL` | 1.5 rad/s, 3 rad/s² | 3 times Demo 1's values |
 | `MAX_VOLTAGE` | 4 V | Cap on each wheel. The 3× speeds need up to about 3.7 V in simulation |
@@ -214,8 +214,9 @@ None of this has run on the robot yet. What has been checked:
   anything while turning faster than 1 rad/s fails the 1.5 rad/s search,
   and passes with `SEARCH_STEP_DEG=40 SEARCH_PAUSE_S=0.2` (7 to 19 s). With
   a camera like the robot's (15 frames/s, 100 ms old, nothing detected while
-  turning faster than 0.1 rad/s), continuous search fails 42 of 60 trials
-  and the current stop-and-look search passes all 60 in 7 to 21 s.
+  turning faster than 0.1 rad/s), a continuous 1.5 rad/s search fails 42
+  of 60 trials and a stop-and-look search (`SEARCH_STEP_DEG=40`) passes all
+  60 in 7 to 21 s.
   At Demo 1's speeds they also all pass with: message latency
   of 0 to 250 ms; 5 frames per second; 90% of frames missing the marker;
   30% of arrow readings wrong; friction of 0.2 to 0.8 V; a robot whose

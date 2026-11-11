@@ -106,9 +106,10 @@ Everything here has been checked in simulation only (`control/README.md`,
    the robot stays clear of the beacon.
 3. Check that the camera finds the marker at 6 ft and reads both arrows
    under the room's lights (`vision/README.md`, "Tuning").
-4. The search turns 40° at a time and stops to look, because the camera's
-   automatic exposure is too long to see the marker while turning. A fixed
-   exposure (`EXPOSURE` in `vision/demo2.py`) gives sharper frames at 30 fps.
+4. The search turns continuously at 0.5 rad/s. 1.5 rad/s blurred the marker
+   with automatic exposure. A shorter fixed exposure (`EXPOSURE` in
+   `vision/demo2.py`) would allow faster, and `SEARCH_STEP_DEG = 40` (stop
+   and look) is the fallback.
 5. The speeds are 3 times Demo 1's. If the wheels slip, lower `RHO_ACCEL`
    and `PHI_ACCEL` first.
 

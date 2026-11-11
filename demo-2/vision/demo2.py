@@ -326,9 +326,13 @@ def main():
     camera.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
     camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # don't queue up old frames
     camera.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+    # The camera keeps its exposure settings between programs, so automatic
+    # exposure is switched back on explicitly when none is given
     if args.exposure is not None:
         camera.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)      # 1 = manual (V4L2)
         camera.set(cv2.CAP_PROP_EXPOSURE, args.exposure)
+    else:
+        camera.set(cv2.CAP_PROP_AUTO_EXPOSURE, 3)      # 3 = automatic (V4L2)
     # What the camera actually accepted (it can refuse or round a setting)
     print(f"Camera: {camera.get(cv2.CAP_PROP_FRAME_WIDTH):.0f}x"
           f"{camera.get(cv2.CAP_PROP_FRAME_HEIGHT):.0f} at "
