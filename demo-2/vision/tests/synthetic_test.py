@@ -30,7 +30,8 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))       # demo2.py is one folder up
 import demo2                                    # noqa: E402
-from marker_link import ARROW_UNKNOWN, ARROW_LEFT, ARROW_RIGHT, ARROW_NAMES   # noqa: E402
+from demo2 import ARROW_UNKNOWN, ARROW_LEFT, ARROW_RIGHT   # noqa: E402
+ARROW_NAMES = {ARROW_UNKNOWN: "?", ARROW_LEFT: "left", ARROW_RIGHT: "right"}
 
 # The made-up camera
 WIDTH, HEIGHT = demo2.FRAME_WIDTH, demo2.FRAME_HEIGHT
@@ -70,7 +71,7 @@ def draw_frame(picture, marker_x, distance_m, angle_deg, yaw_deg):
     """Return the frame the camera would see with the beacon picture placed
     so its marker center is distance_m away (along the floor), angle_deg to
     the left of the camera axis, and turned yaw_deg."""
-    pixel = demo2.MARKER_SIZE_M / MARKER_PIXELS             # meters per picture pixel
+    pixel = demo2.MARKER_SIZE / MARKER_PIXELS             # meters per picture pixel
     paper = cv2.copyMakeBorder(picture, MARGIN, MARGIN, MARGIN, MARGIN,
                                cv2.BORDER_CONSTANT, value=(255, 255, 255))
     height, width = paper.shape[:2]
@@ -134,13 +135,12 @@ def main():
                         print(label, "marker not found".center(43), "| FAIL")
                         continue
                     found_angle, found_distance, corners = result
-                    arrow, green, red, left_area, right_area = demo2.find_arrow(frame, corners)
+                    arrow, left_box, right_box, green, red = demo2.find_arrow(frame, corners)
 
                     # Close up and off to one side, the arrow can be outside
                     # the picture. Then there is nothing to read.
-                    area = left_area if true_arrow == ARROW_LEFT else right_area
-                    in_frame = (area.min() >= 0 and area[:, 0].max() < WIDTH
-                                and area[:, 1].max() < HEIGHT)
+                    x1, x2, y1, y2 = left_box if true_arrow == ARROW_LEFT else right_box
+                    in_frame = x1 >= 0 and x2 <= WIDTH and y1 >= 0 and y2 <= HEIGHT
 
                     problems = []
                     if abs(found_angle - angle) > ANGLE_TOLERANCE_DEG:

@@ -200,7 +200,7 @@ model has no friction, deadband or camera noise.
 None of this has run on the robot yet. What has been checked:
 
 - All sketches compile for the Uno (`beacon` uses 39% of flash, 37% of RAM).
-- The message: 206 messages packed by `marker_link.py` were decoded
+- The message: 206 messages packed by the Pi code (now `make_message()` in `vision/demo2.py`, byte-for-byte the same) were decoded
   correctly by `beacon.ino`'s receive code, and messages with a wrong
   length, ID or checksum were dropped.
 - `run_sim.py`: 60 of 60 type 2 trials and 30 of 30 type 1 trials pass,
