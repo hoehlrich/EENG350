@@ -67,7 +67,7 @@ already knows or keeps searching.
 
 The format is written down in three places, which must change together:
 
-- `vision/marker_link.py`: `MESSAGE_FORMAT` and `pack_message()`
+- `vision/demo2.py`: `make_message()`
 - `control/beacon/beacon.ino`: `struct MarkerMsg`
 - `control/tests/marker_echo/marker_echo.ino`: the same struct
 
@@ -76,21 +76,25 @@ doesn't know the ID ignores it.
 
 ## Quick start for a demo run
 
+Everything runs from the Pi, with the Arduino plugged into the Pi's USB.
+
 Once, on the Pi: put `camera_calibration.npz` (the Demo 1 file, it is not in
-this repository) in `vision/`, and install `vision/demo2.service` so
-`demo2.py` starts at boot (instructions at the top of that file).
+this repository) in `vision/`, and install `arduino-cli` with the AVR core
+(`arduino-cli core install arduino:avr`).
 
-For each trial:
+For each trial, put the robot on its start mark and run one of:
 
-1. Power the Pi and give it time to boot. If the LCD is attached it shows
-   `No marker`, or the angle once the camera can see the beacon.
-2. In `control/beacon/beacon.ino`, set `TURN_AT_BEACON` to `false` for trial
-   type 1 or `true` for type 2, and upload.
-3. Unplug the USB cable and put the robot on its start mark.
-4. Press the Arduino's reset button. That is the go signal. The robot
-   starts moving `START_DELAY_S` (1 s) later.
+```
+./trial1.sh     # type 1: find the beacon, drive to it, stop
+./trial2.sh     # type 2: the same, then turn 90 deg the way the arrow points
+```
 
-To run the same trial type again, just press reset.
+Each one sets `TURN_AT_BEACON` in a copy of `control/beacon/beacon.ino` (the
+file in the repo is not changed), compiles it, starts `vision/demo2.py`,
+then uploads the sketch. The upload finishing is the go signal: the robot
+starts moving `START_DELAY_S` (1 s) later. Ctrl+C stops the vision code.
+The Arduino is on `/dev/ttyACM0` unless you say otherwise, e.g.
+`PORT=/dev/ttyACM1 ./trial1.sh`.
 
 ## Before the first run on the robot
 
