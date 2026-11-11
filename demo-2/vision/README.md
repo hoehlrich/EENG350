@@ -30,18 +30,6 @@ For a demo run, don't start it by hand: use `../trial1.sh` or
   picture, the script checks a box just left of the marker for green and a
   box just right of it for red. Between `MIN_FILL` and `MAX_FILL` of a box
   counts as an arrow. Neither or both is sent as unknown.
-- **Speed.** The camera is read in its own thread, so the next frame is
-  captured and decoded while this one is processed, and only the newest
-  frame is ever used. Once the marker has been seen, the next frame is
-  searched only near where it was (`TRACK_MARGIN`, `TRACK_MIN_PX`), and the
-  whole picture only if it isn't there. Only the two arrow boxes are
-  converted to HSV. On a PC this makes a frame 1.5 times cheaper while
-  searching and 2.5 times cheaper once the marker is found, with the same
-  answers as before. Every 2 s the script prints the frame rate and `work`,
-  the time spent per frame. If `work` is well under 1000 / fps, the camera
-  is what limits the frame rate, not the code. On the robot it is 15
-  frames/s with about 19 ms of work, so the camera is the limit. The camera
-  is always set to automatic exposure.
 - **No smoothing.** Every frame is sent as measured. The Arduino uses the
   newest angle and distance and counts arrow readings as votes.
 - **LCD** (optional) shows angle, distance and arrow twice a second from its
@@ -67,7 +55,7 @@ and the two arrow boxes, each labeled with how much of it is green or red.
 | A box isn't over the arrow | `ARROW_NEAR`, `ARROW_FAR`, `ARROW_HALF_HEIGHT` |
 | The number over the arrow is below 0.2 | Widen `GREEN_LOW`/`GREEN_HIGH` or the red ranges, or lower their saturation (middle number) |
 | The number on the empty side is above 0.1 | Something behind the beacon is that color: narrow the ranges or raise saturation |
-| Marker missed during the search | The camera only detects it when the robot is still: lengthen `SEARCH_PAUSE_S` or shrink `SEARCH_STEP_DEG` in `beacon.ino` |
+| Marker lost while the robot turns | Slow the search (`SEARCH_PHI_DOT` in `beacon.ino`) or make it stop and look (`SEARCH_STEP_DEG`) |
 
 ## Testing without the robot
 
