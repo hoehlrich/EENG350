@@ -39,8 +39,9 @@ For a demo run, don't start it by hand: use `../trial1.sh` or
   searching and 2.5 times cheaper once the marker is found, with the same
   answers as before. Every 2 s the script prints the frame rate and `work`,
   the time spent per frame. If `work` is well under 1000 / fps, the camera
-  is what limits the frame rate (often its auto exposure in dim light), not
-  the code.
+  is what limits the frame rate, not the code. On the robot it is 15
+  frames/s with about 19 ms of work, so the camera is the limit. The camera
+  is always set to automatic exposure.
 - **No smoothing.** Every frame is sent as measured. The Arduino uses the
   newest angle and distance and counts arrow readings as votes.
 - **LCD** (optional) shows angle, distance and arrow twice a second from its
@@ -66,8 +67,7 @@ and the two arrow boxes, each labeled with how much of it is green or red.
 | A box isn't over the arrow | `ARROW_NEAR`, `ARROW_FAR`, `ARROW_HALF_HEIGHT` |
 | The number over the arrow is below 0.2 | Widen `GREEN_LOW`/`GREEN_HIGH` or the red ranges, or lower their saturation (middle number) |
 | The number on the empty side is above 0.1 | Something behind the beacon is that color: narrow the ranges or raise saturation |
-| Under 30 fps, and `work` well under 1000 / fps | Automatic exposure is too long for the room. Try `python3 demo2.py --exposure 100` (usually 10 ms), lower until the marker blurs less, higher if it's too dark to detect at 6 ft, then set `EXPOSURE` at the top of `demo2.py`. `v4l2-ctl -d /dev/video0 --list-ctrls` shows the camera's exposure range |
-| Marker lost while the robot turns | Shorter `EXPOSURE`, or a longer `SEARCH_PAUSE_S` / smaller `SEARCH_STEP_DEG` in `beacon.ino` |
+| Marker missed during the search | The camera only detects it when the robot is still: lengthen `SEARCH_PAUSE_S` or shrink `SEARCH_STEP_DEG` in `beacon.ino` |
 
 ## Testing without the robot
 

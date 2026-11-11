@@ -81,7 +81,8 @@ if stage == SEARCH
         stage = FACE;
     elseif P.SEARCH_STEP_DEG <= 0
         phi_target = phi_prof(1) + P.SEARCH_DIRECTION * pi;
-    elseif isequal(phi_prof, [phi_target 0])
+    elseif isequal(phi_prof, [phi_target 0]) && abs(phi_target - phi) < P.SEARCH_SETTLE_DEG * pi / 180
+        % stopped on the step (the sketch also gives up waiting after 1 s)
         if pause_since < 0
             pause_since = t;
         elseif t - pause_since >= P.SEARCH_PAUSE_S

@@ -100,8 +100,8 @@ All at the top of `beacon.ino`. The ones to look at first:
 | `STOP_DISTANCE_FT` | 1.0 | Center of rotation to marker at the stop. Must be under 1.5, and big enough that the front of the robot stays off the beacon |
 | `CAMERA_OFFSET_M` | 0.10 | **Measure:** camera lens ahead of the line between the wheels |
 | `CAMERA_LATENCY_MS` | 80 | Guess at the age of a reading. See the table under "Bringing it up" |
-| `SEARCH_PHI_DOT` | 0.5 rad/s | Search speed. Limited by motion blur: 1.5 rad/s missed the marker with automatic exposure |
-| `SEARCH_STEP_DEG`, `SEARCH_PAUSE_S` | 0, 0.4 s | 0 = turn continuously. 40 = turn 40°, stop 0.4 s to look, repeat: use it if the marker is missed while turning |
+| `SEARCH_STEP_DEG`, `SEARCH_PHI_DOT` | 45°, 1.5 rad/s | The search turns 45° at up to 1.5 rad/s, stops, looks, and repeats. The camera sees about 60°, so the steps overlap. The camera can't detect the marker while the robot turns, even slowly. 0 = turn continuously |
+| `SEARCH_PAUSE_S`, `SEARCH_SETTLE_DEG` | 0.5 s, 2° | The look lasts 0.5 s (about 7 frames), timed from when the robot is within 2° of the step's heading, so every frame is taken standing still |
 | `MAX_RHO_DOT`, `RHO_ACCEL` | 0.3 m/s, 0.3 m/s² | 3 times Demo 1's values. A trial takes 7 to 14 s in simulation (15 to 33 s at Demo 1's) |
 | `MAX_PHI_DOT`, `PHI_ACCEL` | 1.5 rad/s, 3 rad/s² | 3 times Demo 1's values |
 | `MAX_VOLTAGE` | 4 V | Cap on each wheel. The 3× speeds need up to about 3.7 V in simulation |
@@ -142,7 +142,7 @@ Opening the USB serial port resets the Uno and starts the run, as in Demo 1.
 
 | What happens | Likely cause |
 |--------------|--------------|
-| Searches forever with the beacon in view | No valid messages: check with `marker_echo`. Or the marker blurs while turning: lower `SEARCH_PHI_DOT`, set `SEARCH_STEP_DEG` to 40, or shorten the camera's exposure |
+| Searches forever with the beacon in view | No valid messages: check with `marker_echo`. Or the looks are too short to catch a frame: raise `SEARCH_PAUSE_S` |
 | Swings past the marker when it first sees it, then comes back | `CAMERA_LATENCY_MS` is too low. Too high and it stops short and creeps up instead |
 | Stops too close or too far by the same amount every time | `CAMERA_OFFSET_M`, or the camera's distance is off (marker size, calibration). Or just change `STOP_DISTANCE_FT` |
 | Drives past the beacon's side | The camera isn't pointing straight ahead, or the angle sign is wrong (step 1) |
@@ -215,8 +215,10 @@ None of this has run on the robot yet. What has been checked:
   and passes with `SEARCH_STEP_DEG=40 SEARCH_PAUSE_S=0.2` (7 to 19 s). With
   a camera like the robot's (15 frames/s, 100 ms old, nothing detected while
   turning faster than 0.1 rad/s), a continuous 1.5 rad/s search fails 42
-  of 60 trials and a stop-and-look search (`SEARCH_STEP_DEG=40`) passes all
-  60 in 7 to 21 s.
+  of 60 trials. The current search (45° steps, 0.5 s looks once stopped)
+  passes all 60 in 7 to 21 s, also with nothing detected above 0.02 rad/s,
+  half of the frames missing the marker, 0.8 V of friction, or a 50° field
+  of view.
   At Demo 1's speeds they also all pass with: message latency
   of 0 to 250 ms; 5 frames per second; 90% of frames missing the marker;
   30% of arrow readings wrong; friction of 0.2 to 0.8 V; a robot whose

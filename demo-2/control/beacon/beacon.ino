@@ -54,15 +54,16 @@ const float CAMERA_OFFSET_M = 0.10;
 const unsigned long CAMERA_LATENCY_MS = 80;
 
 // ------------------------------ search, approach ----------------------------
-// The search turns continuously at SEARCH_PHI_DOT. The camera has to detect
-// the marker while turning: 0.5 rad/s works with the camera's automatic
-// exposure, 1.5 rad/s blurred the marker too much. Faster needs a shorter
-// fixed EXPOSURE in vision/demo2.py. If it misses the marker, set
-// SEARCH_STEP_DEG to 40: then it turns 40 deg, stops SEARCH_PAUSE_S to look,
-// and repeats (the camera sees about 60 deg, so the steps overlap).
-const float SEARCH_PHI_DOT  = 0.5;       // rad/s
-const float SEARCH_STEP_DEG = 0.0;       // 0: turn continuously. > 0: turn this far, pause to look, repeat
-const float SEARCH_PAUSE_S  = 0.4;       // the pause, when stepping
+// The search turns SEARCH_STEP_DEG quickly, stops, looks for SEARCH_PAUSE_S,
+// and repeats. The camera only detects the marker reliably when the robot is
+// still (while turning, even slowly, the picture is too blurred), so the
+// pause is timed from when the robot has actually stopped: within
+// SEARCH_SETTLE_DEG of the step's heading. The camera sees about 60 deg, so
+// 45 deg steps overlap. SEARCH_STEP_DEG = 0 turns continuously instead.
+const float SEARCH_PHI_DOT    = 1.5;     // rad/s, turning speed between looks
+const float SEARCH_STEP_DEG   = 45.0;    // 0: turn continuously. > 0: turn this far, pause to look, repeat
+const float SEARCH_PAUSE_S    = 0.5;     // look this long once stopped (about 7 frames at 15 frames/s)
+const float SEARCH_SETTLE_DEG = 2.0;     // counts as stopped within this of the step's heading
 const float MARKER_LOST_S   = 1.5;       // facing where the marker was and not seen for this long: search again
 const float FACE_TOL_DEG    = 5.0;       // start driving once the marker is this close to straight ahead
 const float FACE_RATE       = 0.15;      // ... and the turn has slowed to this [rad/s]
@@ -181,6 +182,7 @@ bool readMarker(MarkerMsg &m) {
 // ------------------------------ pins, encoders, motors ----------------------
 const float STOP_DISTANCE_M = STOP_DISTANCE_FT * 0.3048;
 const float SEARCH_STEP_RAD = SEARCH_STEP_DEG * PI / 180.0;
+const float SEARCH_SETTLE_RAD = SEARCH_SETTLE_DEG * PI / 180.0;
 const float FACE_TOL_RAD    = FACE_TOL_DEG * PI / 180.0;
 
 const int EN_PIN       = 4;
@@ -414,8 +416,12 @@ void loop() {
         } else if (SEARCH_STEP_RAD <= 0) {
             // Continuous: keep the target half a turn ahead, so the profile cruises
             phi_target = phi_prof.pos + SEARCH_DIRECTION * PI;
-        } else if (profileDone(phi_prof, phi_target)) {
-            // Stepping: look for SEARCH_PAUSE_S (first before moving at all), then step on
+        } else if (profileDone(phi_prof, phi_target) &&
+                   (fabs(phi_target - phi) < SEARCH_SETTLE_RAD ||
+                    (profile_done_time >= 0 && current_time - profile_done_time >= 1.0))) {
+            // Stepping: the robot has stopped (or 1 s has passed since the
+            // reference did, in case friction holds it just off). Look for
+            // SEARCH_PAUSE_S (first before moving at all), then step on.
             if (search_pause_since < 0) {
                 search_pause_since = current_time;
             } else if (current_time - search_pause_since >= SEARCH_PAUSE_S) {
