@@ -6,3 +6,6 @@ slprj/
 
 # Python
 __pycache__/
+
+# Frames saved by demo-2/vision/tests/synthetic_test.py --save
+demo-2/vision/tests/frames/
