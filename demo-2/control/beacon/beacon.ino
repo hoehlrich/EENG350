@@ -54,9 +54,14 @@ const float CAMERA_OFFSET_M = 0.10;
 const unsigned long CAMERA_LATENCY_MS = 80;
 
 // ------------------------------ search, approach ----------------------------
-const float SEARCH_PHI_DOT  = 1.5;       // rad/s. Too fast and the marker blurs (0.5 worked; set SEARCH_STEP_DEG if 1.5 doesn't)
-const float SEARCH_STEP_DEG = 0.0;       // 0: turn continuously. > 0: turn this far, pause to look, repeat
-const float SEARCH_PAUSE_S  = 0.4;       // the pause, when stepping
+// The search turns SEARCH_STEP_DEG, stops for SEARCH_PAUSE_S so the camera
+// gets sharp pictures, and repeats. Turning continuously (SEARCH_STEP_DEG = 0)
+// only works if the camera can detect the marker while turning: on this
+// robot the camera's exposure is too long for that at 1.5 rad/s. The camera
+// sees about 60 deg, so steps of 40 deg overlap.
+const float SEARCH_PHI_DOT  = 1.5;       // rad/s, turning speed between looks
+const float SEARCH_STEP_DEG = 40.0;      // 0: turn continuously. > 0: turn this far, pause to look, repeat
+const float SEARCH_PAUSE_S  = 0.4;       // the pause: the robot settles, then the camera gets a few frames
 const float MARKER_LOST_S   = 1.5;       // facing where the marker was and not seen for this long: search again
 const float FACE_TOL_DEG    = 5.0;       // start driving once the marker is this close to straight ahead
 const float FACE_RATE       = 0.15;      // ... and the turn has slowed to this [rad/s]

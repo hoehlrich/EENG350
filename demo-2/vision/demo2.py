@@ -43,6 +43,7 @@ import struct
 import time
 import threading
 import queue
+import argparse
 
 # ----------------------------------------------------
 # SETTINGS
@@ -52,6 +53,15 @@ MARKER_SIZE = 0.0508                # marker black square width [m] (2 in)
 FRAME_WIDTH = 1280                  # same resolution as the calibration
 FRAME_HEIGHT = 720
 CAMERA_FPS = 30                     # frame rate to ask the camera for
+
+# Exposure. None = the camera's automatic exposure. In a dim room that picks
+# a long exposure (up to 1/15 s), which holds the camera to 15 frames/s and
+# smears the marker whenever the robot moves. A number sets a fixed
+# exposure in the camera's own units: 100 microseconds on most USB cameras,
+# so 100 = 10 ms. Shorter is sharper and allows 30 frames/s, but darker.
+# Find a value with a screen attached:  python3 demo2.py --exposure 100
+# then put it here, since the trial scripts run demo2.py with no options.
+EXPOSURE = None
 
 # Tracking: once the marker has been seen, the next frame is searched only
 # near where it was (much faster than the whole picture). If it isn't there,
@@ -297,6 +307,12 @@ class CameraReader:
 # MAIN LOOP
 # ----------------------------------------------------
 def main():
+    parser = argparse.ArgumentParser(description="Demo 2 vision")
+    parser.add_argument("--exposure", type=float, default=EXPOSURE,
+                        help="fixed exposure in the camera's units (usually 100 us), "
+                             "instead of EXPOSURE at the top of this file")
+    args = parser.parse_args()
+
     calibration = np.load(os.path.join(HERE, "camera_calibration.npz"))
     camera_matrix = calibration["camera_matrix"]
     dist_coeffs = calibration["dist_coeffs"]
@@ -310,6 +326,15 @@ def main():
     camera.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
     camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # don't queue up old frames
     camera.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+    if args.exposure is not None:
+        camera.set(cv2.CAP_PROP_AUTO_EXPOSURE, 1)      # 1 = manual (V4L2)
+        camera.set(cv2.CAP_PROP_EXPOSURE, args.exposure)
+    # What the camera actually accepted (it can refuse or round a setting)
+    print(f"Camera: {camera.get(cv2.CAP_PROP_FRAME_WIDTH):.0f}x"
+          f"{camera.get(cv2.CAP_PROP_FRAME_HEIGHT):.0f} at "
+          f"{camera.get(cv2.CAP_PROP_FPS):.0f} fps, exposure "
+          + ("auto" if args.exposure is None else
+             f"{camera.get(cv2.CAP_PROP_EXPOSURE):.0f} (asked for {args.exposure:.0f})"))
     settle_until = time.time() + 0.5
     while time.time() < settle_until:   # let auto exposure settle
         camera.read()

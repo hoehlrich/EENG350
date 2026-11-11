@@ -31,7 +31,7 @@ CAM_ARROW_RANGE_M = 2.5;     % arrow can't be read beyond this
 
 %% Search and approach (beacon.ino, "search, approach")
 SEARCH_PHI_DOT  = 1.5;       % rad/s
-SEARCH_STEP_DEG = 0.0;       % 0: turn continuously. > 0: turn this far, pause, repeat
+SEARCH_STEP_DEG = 40.0;      % 0: turn continuously. > 0: turn this far, pause, repeat
 SEARCH_PAUSE_S  = 0.4;       % s
 MARKER_LOST_S   = 1.5;       % s
 FACE_TOL_DEG    = 5.0;       % deg

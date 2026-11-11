@@ -66,7 +66,8 @@ and the two arrow boxes, each labeled with how much of it is green or red.
 | A box isn't over the arrow | `ARROW_NEAR`, `ARROW_FAR`, `ARROW_HALF_HEIGHT` |
 | The number over the arrow is below 0.2 | Widen `GREEN_LOW`/`GREEN_HIGH` or the red ranges, or lower their saturation (middle number) |
 | The number on the empty side is above 0.1 | Something behind the beacon is that color: narrow the ranges or raise saturation |
-| Marker lost while the robot turns | Slow the search (`SEARCH_PHI_DOT` in `beacon.ino`) or make it stop and look (`SEARCH_STEP_DEG`) |
+| Under 30 fps, and `work` well under 1000 / fps | Automatic exposure is too long for the room. Try `python3 demo2.py --exposure 100` (usually 10 ms), lower until the marker blurs less, higher if it's too dark to detect at 6 ft, then set `EXPOSURE` at the top of `demo2.py`. `v4l2-ctl -d /dev/video0 --list-ctrls` shows the camera's exposure range |
+| Marker lost while the robot turns | Shorter `EXPOSURE`, or a longer `SEARCH_PAUSE_S` / smaller `SEARCH_STEP_DEG` in `beacon.ino` |
 
 ## Testing without the robot
 
