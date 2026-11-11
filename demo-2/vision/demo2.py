@@ -51,6 +51,16 @@ MARKER_ID = 0
 MARKER_SIZE = 0.0508                # marker black square width [m] (2 in)
 FRAME_WIDTH = 1280                  # same resolution as the calibration
 FRAME_HEIGHT = 720
+CAMERA_FPS = 30                     # frame rate to ask the camera for
+
+# Tracking: once the marker has been seen, the next frame is searched only
+# near where it was (much faster than the whole picture). If it isn't there,
+# the whole picture is searched in the same frame, so nothing is missed.
+# The window reaches this many marker widths past the marker on each side,
+# and at least TRACK_MIN_PX pixels (the marker moves about 55 px per frame
+# when the robot turns at 1.5 rad/s and the camera gives 30 frames/s).
+TRACK_MARGIN = 1.5
+TRACK_MIN_PX = 150
 
 ARDUINO_ADDRESS = 0x08
 MARKER_MSG_ID = 0x01
@@ -128,15 +138,40 @@ def lcd_thread():
 # ----------------------------------------------------
 # FUNCTIONS
 # ----------------------------------------------------
-def find_marker(gray, camera_matrix, dist_coeffs):
-    # Returns (angle_deg, distance_m, corners) for marker 0, or None
+def track_window(corners, gray):
+    # Part of the picture to search next frame: the marker's box plus a margin.
+    # Returns (x1, y1, x2, y2).
+    width = np.ptp(corners[:, 0])
+    margin = max(TRACK_MARGIN * width, TRACK_MIN_PX)
+    x1 = max(0, int(corners[:, 0].min() - margin))
+    y1 = max(0, int(corners[:, 1].min() - margin))
+    x2 = min(gray.shape[1], int(corners[:, 0].max() + margin))
+    y2 = min(gray.shape[0], int(corners[:, 1].max() + margin))
+    return x1, y1, x2, y2
+
+
+def find_marker(gray, camera_matrix, dist_coeffs, window=None):
+    # Returns (angle_deg, distance_m, corners) for marker 0, or None.
+    # window = (x1, y1, x2, y2): look there first, then in the whole picture.
+    if window is not None:
+        x1, y1, x2, y2 = window
+        result = find_marker_in(gray[y1:y2, x1:x2], (x1, y1),
+                                camera_matrix, dist_coeffs)
+        if result is not None:
+            return result
+    return find_marker_in(gray, (0, 0), camera_matrix, dist_coeffs)
+
+
+def find_marker_in(gray, offset, camera_matrix, dist_coeffs):
+    # Looks for marker 0 in gray, which starts at pixel offset = (x, y) of
+    # the full picture. Corners come back in full-picture pixels.
     corners, ids, _ = detector.detectMarkers(gray)
     if ids is None:
         return None
     ids = ids.flatten()
     for i in range(len(ids)):
         if ids[i] == MARKER_ID:
-            c = corners[i][0].astype(np.float64)
+            c = corners[i][0].astype(np.float64) + offset
             ok, rvec, tvec = cv2.solvePnP(marker_points, c, camera_matrix,
                                           dist_coeffs,
                                           flags=cv2.SOLVEPNP_IPPE_SQUARE)
@@ -149,15 +184,16 @@ def find_marker(gray, camera_matrix, dist_coeffs):
     return None
 
 
-def color_fraction(hsv, x1, x2, y1, y2, color):
+def color_fraction(frame, x1, x2, y1, y2, color):
     # Fraction of the box [x1:x2, y1:y2] that is green or red
     x1 = max(0, int(x1))
-    x2 = min(hsv.shape[1], int(x2))
+    x2 = min(frame.shape[1], int(x2))
     y1 = max(0, int(y1))
-    y2 = min(hsv.shape[0], int(y2))
+    y2 = min(frame.shape[0], int(y2))
     if x2 <= x1 or y2 <= y1:            # box is off the edge of the picture
         return 0.0
-    patch = hsv[y1:y2, x1:x2]
+    # Only the box is converted to HSV, not the whole picture (faster)
+    patch = cv2.cvtColor(frame[y1:y2, x1:x2], cv2.COLOR_BGR2HSV)
     if color == "green":
         mask = cv2.inRange(patch, GREEN_LOW, GREEN_HIGH)
     else:
@@ -176,9 +212,8 @@ def find_arrow(frame, c):
     left_box = (cx - ARROW_FAR * width, cx - ARROW_NEAR * width, y1, y2)
     right_box = (cx + ARROW_NEAR * width, cx + ARROW_FAR * width, y1, y2)
 
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    green = color_fraction(hsv, *left_box, "green")
-    red = color_fraction(hsv, *right_box, "red")
+    green = color_fraction(frame, *left_box, "green")
+    red = color_fraction(frame, *right_box, "red")
     is_left = MIN_FILL <= green <= MAX_FILL
     is_right = MIN_FILL <= red <= MAX_FILL
 
@@ -213,6 +248,52 @@ def send(bus, data):
         return False
 
 # ----------------------------------------------------
+# CAMERA THREAD
+# ----------------------------------------------------
+class CameraReader:
+    # Reads the camera in its own thread, so the next frame is captured and
+    # decoded while the main loop works on this one. Only the newest frame
+    # is kept: the main loop never works on an old picture.
+
+    def __init__(self, camera):
+        self.camera = camera
+        self.frame = None
+        self.number = 0                 # counts frames read so far
+        self.new_frame = threading.Condition()
+        self.running = True
+        self.thread = threading.Thread(target=self.run, daemon=True)
+        self.thread.start()
+
+    def run(self):
+        while self.running:
+            ok, frame = self.camera.read()
+            if not self.running:
+                break
+            if not ok:
+                print("Camera read failed")
+                time.sleep(0.1)
+                continue
+            with self.new_frame:
+                self.frame = frame
+                self.number += 1
+                self.new_frame.notify()
+
+    def read(self, last_number):
+        # Waits for a frame newer than last_number. Returns (number, frame),
+        # or (last_number, None) if none came within 1 s.
+        with self.new_frame:
+            if not self.new_frame.wait_for(lambda: self.number != last_number,
+                                           timeout=1.0):
+                return last_number, None
+            return self.number, self.frame
+
+    def stop(self):
+        # Let the thread finish its read before the camera is released
+        self.running = False
+        self.thread.join(timeout=1.0)
+
+
+# ----------------------------------------------------
 # MAIN LOOP
 # ----------------------------------------------------
 def main():
@@ -226,51 +307,64 @@ def main():
     camera.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*"MJPG"))
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
+    camera.set(cv2.CAP_PROP_FPS, CAMERA_FPS)
+    camera.set(cv2.CAP_PROP_BUFFERSIZE, 1)  # don't queue up old frames
     camera.set(cv2.CAP_PROP_AUTOFOCUS, 0)
     settle_until = time.time() + 0.5
     while time.time() < settle_until:   # let auto exposure settle
         camera.read()
+    reader = CameraReader(camera)
 
     arrow_names = {ARROW_UNKNOWN: "?", ARROW_LEFT: "L", ARROW_RIGHT: "R"}
+    frame_number = 0
+    window = None                       # where to look first (tracking)
     frames = 0
     sent = 0
+    busy = 0.0                          # time spent working on frames [s]
     last_print = time.time()
     last_lcd = 0
 
     try:
         while True:
-            ok, frame = camera.read()
-            if not ok:
-                print("Camera read failed")
-                time.sleep(0.1)
+            frame_number, frame = reader.read(frame_number)
+            if frame is None:
                 continue
+            start = time.time()
 
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            result = find_marker(gray, camera_matrix, dist_coeffs)
+            result = find_marker(gray, camera_matrix, dist_coeffs, window)
 
             if result is None:
                 visible, angle, distance, arrow = False, 0.0, 0.0, ARROW_UNKNOWN
+                window = None
             else:
                 angle, distance, corners = result
                 arrow, left_box, right_box, green, red = find_arrow(frame, corners)
                 visible = True
+                window = track_window(corners, gray)
 
             if send(bus, make_message(visible, angle, distance, arrow)):
                 sent += 1
             frames += 1
+            busy += time.time() - start
 
-            # Terminal, every 2 s
+            # Terminal, every 2 s. "work" is the time per frame spent finding
+            # the marker. If it is well under 1000/fps, the camera is what
+            # limits the frame rate, not this code.
             now = time.time()
             if now - last_print >= 2:
                 fps = frames / (now - last_print)
+                work = 1000 * busy / max(frames, 1)
                 if visible:
-                    print(f"{fps:4.1f} fps  sent {sent}/{frames}  "
+                    print(f"{fps:4.1f} fps  work {work:4.1f} ms  sent {sent}/{frames}  "
                           f"angle {angle:6.2f} deg  dist {distance:5.3f} m  "
                           f"arrow {arrow_names[arrow]}")
                 else:
-                    print(f"{fps:4.1f} fps  sent {sent}/{frames}  no marker")
+                    print(f"{fps:4.1f} fps  work {work:4.1f} ms  sent {sent}/{frames}  "
+                          f"no marker")
                 frames = 0
                 sent = 0
+                busy = 0.0
                 last_print = now
 
             # LCD, twice a second
@@ -302,8 +396,10 @@ def main():
         pass
 
     send(bus, make_message(False, 0, 0, ARROW_UNKNOWN))   # leave the Arduino on "no marker"
+    reader.stop()
     camera.release()
-    cv2.destroyAllWindows()
+    if SHOW_WINDOW:
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":

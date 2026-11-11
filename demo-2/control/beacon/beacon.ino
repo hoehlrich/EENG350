@@ -54,7 +54,7 @@ const float CAMERA_OFFSET_M = 0.10;
 const unsigned long CAMERA_LATENCY_MS = 80;
 
 // ------------------------------ search, approach ----------------------------
-const float SEARCH_PHI_DOT  = 0.5;       // rad/s. Too fast and the marker blurs
+const float SEARCH_PHI_DOT  = 1.5;       // rad/s. Too fast and the marker blurs (0.5 worked; set SEARCH_STEP_DEG if 1.5 doesn't)
 const float SEARCH_STEP_DEG = 0.0;       // 0: turn continuously. > 0: turn this far, pause to look, repeat
 const float SEARCH_PAUSE_S  = 0.4;       // the pause, when stepping
 const float MARKER_LOST_S   = 1.5;       // facing where the marker was and not seen for this long: search again
@@ -90,19 +90,21 @@ const float Kp_rho = 3.0;                // (m/s) per m
 const float Ki_rho = 2.0;                // (m/s) per m*s
 const float Kp_phi = 4.0;                // (rad/s) per rad
 const float Ki_phi = 2.0;                // (rad/s) per rad*s
-const float RHO_DOT_LIMIT = 0.15;        // limit on rho_dot_d [m/s]
-const float PHI_DOT_LIMIT = 0.75;        // limit on phi_dot_d [rad/s]
+const float RHO_DOT_LIMIT = 0.45;        // limit on rho_dot_d [m/s], 1.5 x MAX_RHO_DOT
+const float PHI_DOT_LIMIT = 2.25;        // limit on phi_dot_d [rad/s], 1.5 x MAX_PHI_DOT
 
-// Reference profile. These set how long a run takes: time is scored, so
-// raise them (and the two limits above, and MAX_VOLTAGE) once it works.
-const float MAX_RHO_DOT = 0.1;           // m/s
-const float RHO_ACCEL   = 0.1;           // m/s^2
-const float MAX_PHI_DOT = 0.5;           // rad/s
-const float PHI_ACCEL   = 1.0;           // rad/s^2
+// Reference profile. These set how long a run takes. They are 3 times
+// Demo 1's values (0.1 m/s, 0.1 m/s^2, 0.5 rad/s, 1 rad/s^2), which worked
+// on this robot. If the wheels slip, lower the two ACCELs first.
+const float MAX_RHO_DOT = 0.3;           // m/s
+const float RHO_ACCEL   = 0.3;           // m/s^2
+const float MAX_PHI_DOT = 1.5;           // rad/s
+const float PHI_ACCEL   = 3.0;           // rad/s^2
 
 // Hard cap on each wheel's voltage, so a sign or calibration mistake can't
-// send the robot off at full speed.
-const float MAX_VOLTAGE = 3.0;           // V
+// send the robot off at full speed. At the speeds above the robot needs up
+// to about 3.7 V in simulation (3.0 was enough at Demo 1's speeds).
+const float MAX_VOLTAGE = 4.0;           // V
 
 // Stopping
 const float RHO_TOL = 0.003;             // m (about 0.1 in)

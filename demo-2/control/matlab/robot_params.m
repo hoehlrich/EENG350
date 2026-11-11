@@ -30,7 +30,7 @@ CAM_LATENCY_S    = 0.08;     % picture taken -> message at the Arduino
 CAM_ARROW_RANGE_M = 2.5;     % arrow can't be read beyond this
 
 %% Search and approach (beacon.ino, "search, approach")
-SEARCH_PHI_DOT  = 0.5;       % rad/s
+SEARCH_PHI_DOT  = 1.5;       % rad/s
 SEARCH_STEP_DEG = 0.0;       % 0: turn continuously. > 0: turn this far, pause, repeat
 SEARCH_PAUSE_S  = 0.4;       % s
 MARKER_LOST_S   = 1.5;       % s
@@ -61,16 +61,16 @@ Kp_rho = 3.0;                % (m/s) per m
 Ki_rho = 2.0;                % (m/s) per m*s
 Kp_phi = 4.0;                % (rad/s) per rad
 Ki_phi = 2.0;                % (rad/s) per rad*s
-RHO_DOT_LIMIT = 0.15;        % m/s
-PHI_DOT_LIMIT = 0.75;        % rad/s
+RHO_DOT_LIMIT = 0.45;        % m/s
+PHI_DOT_LIMIT = 2.25;        % rad/s
 
 % Reference profile
-MAX_RHO_DOT = 0.1;           % m/s
-RHO_ACCEL   = 0.1;           % m/s^2
-MAX_PHI_DOT = 0.5;           % rad/s
-PHI_ACCEL   = 1.0;           % rad/s^2
+MAX_RHO_DOT = 0.3;           % m/s
+RHO_ACCEL   = 0.3;           % m/s^2
+MAX_PHI_DOT = 1.5;           % rad/s
+PHI_ACCEL   = 3.0;           % rad/s^2
 
-MAX_VOLTAGE = 3.0;           % V, cap on each wheel
+MAX_VOLTAGE = 4.0;           % V, cap on each wheel
 SETTLE_HOLD_S = 0.3;         % s
 Ts = 0.01;                   % Arduino loop time (s)
 

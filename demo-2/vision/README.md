@@ -30,6 +30,17 @@ For a demo run, don't start it by hand: use `../trial1.sh` or
   picture, the script checks a box just left of the marker for green and a
   box just right of it for red. Between `MIN_FILL` and `MAX_FILL` of a box
   counts as an arrow. Neither or both is sent as unknown.
+- **Speed.** The camera is read in its own thread, so the next frame is
+  captured and decoded while this one is processed, and only the newest
+  frame is ever used. Once the marker has been seen, the next frame is
+  searched only near where it was (`TRACK_MARGIN`, `TRACK_MIN_PX`), and the
+  whole picture only if it isn't there. Only the two arrow boxes are
+  converted to HSV. On a PC this makes a frame 1.5 times cheaper while
+  searching and 2.5 times cheaper once the marker is found, with the same
+  answers as before. Every 2 s the script prints the frame rate and `work`,
+  the time spent per frame. If `work` is well under 1000 / fps, the camera
+  is what limits the frame rate (often its auto exposure in dim light), not
+  the code.
 - **No smoothing.** Every frame is sent as measured. The Arduino uses the
   newest angle and distance and counts arrow readings as votes.
 - **LCD** (optional) shows angle, distance and arrow twice a second from its

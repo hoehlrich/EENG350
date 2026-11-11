@@ -100,10 +100,11 @@ All at the top of `beacon.ino`. The ones to look at first:
 | `STOP_DISTANCE_FT` | 1.0 | Center of rotation to marker at the stop. Must be under 1.5, and big enough that the front of the robot stays off the beacon |
 | `CAMERA_OFFSET_M` | 0.10 | **Measure:** camera lens ahead of the line between the wheels |
 | `CAMERA_LATENCY_MS` | 80 | Guess at the age of a reading. See the table under "Bringing it up" |
-| `SEARCH_PHI_DOT` | 0.5 rad/s | Search speed. Limited by motion blur |
+| `SEARCH_PHI_DOT` | 1.5 rad/s | Search speed. Limited by motion blur. 0.5 rad/s is known to work |
 | `SEARCH_STEP_DEG` | 0 | 0 = turn continuously. About 40 = stop and look every 40° |
-| `MAX_RHO_DOT`, `RHO_ACCEL` | 0.1 m/s, 0.1 m/s² | Demo 1's slow values. A 5 ft trial takes 15 to 30 s with them |
-| `MAX_PHI_DOT`, `PHI_ACCEL` | 0.5 rad/s, 1 rad/s² | Demo 1's values |
+| `MAX_RHO_DOT`, `RHO_ACCEL` | 0.3 m/s, 0.3 m/s² | 3 times Demo 1's values. A trial takes 7 to 14 s in simulation (15 to 33 s at Demo 1's) |
+| `MAX_PHI_DOT`, `PHI_ACCEL` | 1.5 rad/s, 3 rad/s² | 3 times Demo 1's values |
+| `MAX_VOLTAGE` | 4 V | Cap on each wheel. The 3× speeds need up to about 3.7 V in simulation |
 
 The robot and controller constants are Demo 1's final ones. Keep them the
 same in `matlab/robot_params.m`.
@@ -119,9 +120,9 @@ Opening the USB serial port resets the Uno and starts the run, as in Demo 1.
    positive when the marker moves to the camera's left, and the distance
    should match a tape measure.
 2. **The sketch, wheels off the ground.** Upload `beacon`. After 1 s both
-   wheels should turn slowly in opposite directions (the search), left wheel
+   wheels should turn in opposite directions (the search), left wheel
    backward. Run `python3 send_marker.py 30 1.5 L`: the wheels should finish
-   a short left turn, run forward together for about 14 s, then turn left
+   a short left turn, run forward together for about 5 s, then turn left
    again and stop. With `R` the last turn is the other way.
 3. **On the floor, still without the camera.** The same command drives the
    robot about 1.3 m (1.5 m + `CAMERA_OFFSET_M` − 1 ft) along a line about
@@ -204,8 +205,15 @@ None of this has run on the robot yet. What has been checked:
   correctly by `beacon.ino`'s receive code, and messages with a wrong
   length, ID or checksum were dropped.
 - `run_sim.py`: 60 of 60 type 2 trials and 30 of 30 type 1 trials pass,
-  stopping 1.00 ft from the beacon and turning the right way, in 15 to 33 s
-  (type 2) at the current speeds. They also all pass with: message latency
+  stopping 1.00 ft from the beacon and turning the right way, in 7 to 14 s
+  (type 2) at the current speeds (3 times Demo 1's; 15 to 33 s at Demo 1's).
+  At the current speeds they also all pass with: message latency of 20 to
+  200 ms; 120 frames per second; 90% of frames missing the marker; 30% of
+  arrow readings wrong; friction of 0.2 to 0.8 V; a miscalibrated robot (as
+  below); and only 5 readings in the whole run. A camera that can't detect
+  anything while turning faster than 1 rad/s fails the 1.5 rad/s search,
+  and passes with `SEARCH_STEP_DEG=40 SEARCH_PAUSE_S=0.2` (7 to 19 s).
+  At Demo 1's speeds they also all pass with: message latency
   of 0 to 250 ms; 5 frames per second; 90% of frames missing the marker;
   30% of arrow readings wrong; friction of 0.2 to 0.8 V; a robot whose
   wheel base and wheel radius are a few percent off, whose camera is 4 cm
