@@ -70,6 +70,20 @@ RED_LOW_1 = (0, 80, 60)             # red wraps around hue 0, so two ranges
 RED_HIGH_1 = (10, 255, 255)
 RED_LOW_2 = (170, 80, 60)
 RED_HIGH_2 = (179, 255, 255)
+
+# TEMPORARY, for the practice beacons printed at home: the printer made the
+# left (green) arrow blue and the right (red) arrow pink. True looks for blue
+# on the left and pink on the right instead. SET BACK TO False for the real
+# beacons.
+HOME_PRINTER_COLORS = True
+if HOME_PRINTER_COLORS:
+    GREEN_LOW = (85, 60, 60)        # "green" = left arrow: blue/cyan, hue 85-130
+    GREEN_HIGH = (130, 255, 255)
+    RED_LOW_1 = (0, 40, 60)         # "red" = right arrow: pink/magenta, hue 135-179
+    RED_HIGH_1 = (5, 255, 255)      # and 0-5 (light pink wraps around hue 0).
+    RED_LOW_2 = (135, 40, 60)       # Lower saturation limit (40), as pink is pale
+    RED_HIGH_2 = (179, 255, 255)
+
 MIN_FILL = 0.12                     # fraction of the patch that must be the color
 MAX_FILL = 0.70                     # more than this is a wall/shirt, not an arrow
 
