@@ -109,7 +109,7 @@ Everything here has been checked in simulation only (`control/README.md`,
 4. The search turns 45° quickly, stops, looks for 0.5 s, and repeats. The
    camera (15 frames/s) only detects the marker reliably when the robot is
    still, even at 5 ft.
-5. The speeds are 3 times Demo 1's. If the wheels slip, lower `RHO_ACCEL`
+5. The speeds are 4.5 times Demo 1's. If the wheels slip, lower `RHO_ACCEL`
    and `PHI_ACCEL` first.
 
 The steps are spelled out in `control/README.md`, "Bringing it up on the

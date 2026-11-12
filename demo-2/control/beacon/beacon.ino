@@ -41,8 +41,8 @@
 
 // ------------------------------ the run -------------------------------------
 const bool  TURN_AT_BEACON   = true;     // true: trial type 2, turn 90 deg at the beacon. false: type 1, stop there
-const float STOP_DISTANCE_FT = 1.2;      // stop with the center of rotation this far from the marker (must be < 1.5).
-                                         // The front of the robot (Pi cable) is 8 cm ahead of the center, so it stops ~0.29 m short
+const float STOP_DISTANCE_FT = 0.8;      // stop with the center of rotation this far from the marker (must be < 1.5).
+                                         // The front of the robot (Pi cable) is 8 cm ahead of the center, so it stops ~0.16 m short
 const float START_DELAY_S    = 1.0;      // motors off this long after reset
 const int   SEARCH_DIRECTION = 1;        // search turning left (+1, CCW seen from above) or right (-1)
 const int   DEFAULT_TURN     = 1;        // turn to make if the arrow was never read: +1 left, -1 right
@@ -67,7 +67,7 @@ const float SIGHTING_MAX_TURN = 0.3;     // rad/s
 // pause is timed from when the robot has actually stopped: within
 // SEARCH_SETTLE_DEG of the step's heading. The camera sees about 60 deg, so
 // 45 deg steps overlap. SEARCH_STEP_DEG = 0 turns continuously instead.
-const float SEARCH_PHI_DOT    = 1.5;     // rad/s, turning speed between looks
+const float SEARCH_PHI_DOT    = 2.25;    // rad/s, turning speed between looks
 const float SEARCH_STEP_DEG   = 45.0;    // 0: turn continuously. > 0: turn this far, pause to look, repeat
 const float SEARCH_PAUSE_S    = 0.8;     // look this long once stopped. Readings are ~0.25 s old, so ~0.5 s of still pictures
 const float SEARCH_SETTLE_DEG = 2.0;     // counts as stopped within this of the step's heading
@@ -104,21 +104,23 @@ const float Kp_rho = 3.0;                // (m/s) per m
 const float Ki_rho = 2.0;                // (m/s) per m*s
 const float Kp_phi = 4.0;                // (rad/s) per rad
 const float Ki_phi = 2.0;                // (rad/s) per rad*s
-const float RHO_DOT_LIMIT = 0.45;        // limit on rho_dot_d [m/s], 1.5 x MAX_RHO_DOT
-const float PHI_DOT_LIMIT = 2.25;        // limit on phi_dot_d [rad/s], 1.5 x MAX_PHI_DOT
+const float RHO_DOT_LIMIT = 0.675;       // limit on rho_dot_d [m/s], 1.5 x MAX_RHO_DOT
+const float PHI_DOT_LIMIT = 3.375;       // limit on phi_dot_d [rad/s], 1.5 x MAX_PHI_DOT
 
-// Reference profile. These set how long a run takes. They are 3 times
+// Reference profile. These set how long a run takes. They are 4.5 times
 // Demo 1's values (0.1 m/s, 0.1 m/s^2, 0.5 rad/s, 1 rad/s^2), which worked
-// on this robot. If the wheels slip, lower the two ACCELs first.
-const float MAX_RHO_DOT = 0.3;           // m/s
-const float RHO_ACCEL   = 0.3;           // m/s^2
-const float MAX_PHI_DOT = 1.5;           // rad/s
-const float PHI_ACCEL   = 3.0;           // rad/s^2
+// on this robot, and 1.5 times the values used on Nov 12 (0.3 m/s,
+// 0.3 m/s^2, 1.5 rad/s, 3 rad/s^2), which also worked. If the wheels slip,
+// lower the two ACCELs first.
+const float MAX_RHO_DOT = 0.45;          // m/s
+const float RHO_ACCEL   = 0.45;          // m/s^2
+const float MAX_PHI_DOT = 2.25;          // rad/s
+const float PHI_ACCEL   = 4.5;           // rad/s^2
 
 // Hard cap on each wheel's voltage, so a sign or calibration mistake can't
 // send the robot off at full speed. At the speeds above the robot needs up
-// to about 3.7 V in simulation (3.0 was enough at Demo 1's speeds).
-const float MAX_VOLTAGE = 4.0;           // V
+// to about 4.4 V in simulation (3.0 was enough at Demo 1's speeds).
+const float MAX_VOLTAGE = 5.0;           // V
 
 // Stopping
 const float RHO_TOL = 0.003;             // m (about 0.1 in)

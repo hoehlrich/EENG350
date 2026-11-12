@@ -97,14 +97,14 @@ All at the top of `beacon.ino`. The ones to look at first:
 | Constant | Value | What it is |
 |----------|-------|------------|
 | `TURN_AT_BEACON` | `true` | `true` for trial type 2, `false` for type 1 |
-| `STOP_DISTANCE_FT` | 1.0 | Center of rotation to marker at the stop. Must be under 1.5, and big enough that the front of the robot stays off the beacon |
+| `STOP_DISTANCE_FT` | 0.8 | Center of rotation to marker at the stop. Must be under 1.5, and big enough that the front of the robot (the Pi cable, 8 cm ahead of the center) stays off the beacon: it stops about 0.16 m short |
 | `CAMERA_OFFSET_M` | 0.10 | **Measure:** camera lens ahead of the line between the wheels |
 | `CAMERA_LATENCY_MS` | 80 | Guess at the age of a reading. See the table under "Bringing it up" |
-| `SEARCH_STEP_DEG`, `SEARCH_PHI_DOT` | 45°, 1.5 rad/s | The search turns 45° at up to 1.5 rad/s, stops, looks, and repeats. The camera sees about 60°, so the steps overlap. The camera can't detect the marker while the robot turns, even slowly. 0 = turn continuously |
+| `SEARCH_STEP_DEG`, `SEARCH_PHI_DOT` | 45°, 2.25 rad/s | The search turns 45° at up to 2.25 rad/s, stops, looks, and repeats. The camera sees about 60°, so the steps overlap. The camera can't detect the marker while the robot turns, even slowly. 0 = turn continuously |
 | `SEARCH_PAUSE_S`, `SEARCH_SETTLE_DEG` | 0.5 s, 2° | The look lasts 0.5 s (about 7 frames), timed from when the robot is within 2° of the step's heading, so every frame is taken standing still |
-| `MAX_RHO_DOT`, `RHO_ACCEL` | 0.3 m/s, 0.3 m/s² | 3 times Demo 1's values. A trial takes 7 to 14 s in simulation (15 to 33 s at Demo 1's) |
-| `MAX_PHI_DOT`, `PHI_ACCEL` | 1.5 rad/s, 3 rad/s² | 3 times Demo 1's values |
-| `MAX_VOLTAGE` | 4 V | Cap on each wheel. The 3× speeds need up to about 3.7 V in simulation |
+| `MAX_RHO_DOT`, `RHO_ACCEL` | 0.45 m/s, 0.45 m/s² | 4.5 times Demo 1's values, 1.5 times the 0.3 m/s used for the Nov 12 trials. A type 2 trial takes 6 to 20 s in simulation |
+| `MAX_PHI_DOT`, `PHI_ACCEL` | 2.25 rad/s, 4.5 rad/s² | 4.5 times Demo 1's values, 1.5 times the Nov 12 trials' |
+| `MAX_VOLTAGE` | 5 V | Cap on each wheel. These speeds need up to about 4.4 V in simulation |
 
 The robot and controller constants are Demo 1's final ones. Keep them the
 same in `matlab/robot_params.m`.
@@ -205,9 +205,14 @@ None of this has run on the robot yet. What has been checked:
   correctly by `beacon.ino`'s receive code, and messages with a wrong
   length, ID or checksum were dropped.
 - `run_sim.py`: 60 of 60 type 2 trials and 30 of 30 type 1 trials pass,
-  stopping 1.00 ft from the beacon and turning the right way, in 7 to 14 s
-  (type 2) at the current speeds (3 times Demo 1's; 15 to 33 s at Demo 1's).
-  At the current speeds they also all pass with: message latency of 20 to
+  stopping 0.79 to 0.80 ft from the beacon and turning the right way, in 6
+  to 20 s (type 2) with the current speeds, stop distance and a robot-like
+  camera (3 cm offset, 0.25 s delay, 15 frames/s, nothing detected while
+  turning). They also pass with a real delay of 0.12 to 0.4 s; at 0.4 s the
+  robot gets as close as 0.51 ft before backing off to its stop. The
+  results below are from earlier settings: 3 times Demo 1's speeds and a
+  1.0 ft stop.
+  At those speeds they also all passed with: message latency of 20 to
   200 ms; 120 frames per second; 90% of frames missing the marker; 30% of
   arrow readings wrong; friction of 0.2 to 0.8 V; a miscalibrated robot (as
   below); and only 5 readings in the whole run. A camera that can't detect
