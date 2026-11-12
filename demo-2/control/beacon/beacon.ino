@@ -41,17 +41,24 @@
 
 // ------------------------------ the run -------------------------------------
 const bool  TURN_AT_BEACON   = true;     // true: trial type 2, turn 90 deg at the beacon. false: type 1, stop there
-const float STOP_DISTANCE_FT = 1.0;      // stop with the center of rotation this far from the marker (must be < 1.5)
+const float STOP_DISTANCE_FT = 1.2;      // stop with the center of rotation this far from the marker (must be < 1.5).
+                                         // The front of the robot (Pi cable) is 8 cm ahead of the center, so it stops ~0.29 m short
 const float START_DELAY_S    = 1.0;      // motors off this long after reset
 const int   SEARCH_DIRECTION = 1;        // search turning left (+1, CCW seen from above) or right (-1)
 const int   DEFAULT_TURN     = 1;        // turn to make if the arrow was never read: +1 left, -1 right
 
 // ------------------------------ camera --------------------------------------
-// MEASURE: how far the camera lens is ahead of the line between the wheels
-const float CAMERA_OFFSET_M = 0.10;
+// How far the camera lens is ahead of the line between the wheels (measured)
+const float CAMERA_OFFSET_M = 0.03;
 // How old a reading is when it gets here (exposure + processing + I2C). The
 // reading is matched with where the robot was that long ago. 0 = don't.
-const unsigned long CAMERA_LATENCY_MS = 80;
+// Measured about 250 ms on the robot (Nov 12 trial log).
+const unsigned long CAMERA_LATENCY_MS = 250;
+// A sighting is ignored if the robot turned faster than this at any time
+// between just before the picture was taken and now: with the camera's
+// delay, a picture taken mid-turn would be paired with the wrong heading.
+// Arrow readings still count. The first sighting comes during a search stop.
+const float SIGHTING_MAX_TURN = 0.3;     // rad/s
 
 // ------------------------------ search, approach ----------------------------
 // The search turns SEARCH_STEP_DEG quickly, stops, looks for SEARCH_PAUSE_S,
@@ -62,7 +69,7 @@ const unsigned long CAMERA_LATENCY_MS = 80;
 // 45 deg steps overlap. SEARCH_STEP_DEG = 0 turns continuously instead.
 const float SEARCH_PHI_DOT    = 1.5;     // rad/s, turning speed between looks
 const float SEARCH_STEP_DEG   = 45.0;    // 0: turn continuously. > 0: turn this far, pause to look, repeat
-const float SEARCH_PAUSE_S    = 0.5;     // look this long once stopped (about 7 frames at 15 frames/s)
+const float SEARCH_PAUSE_S    = 0.8;     // look this long once stopped. Readings are ~0.25 s old, so ~0.5 s of still pictures
 const float SEARCH_SETTLE_DEG = 2.0;     // counts as stopped within this of the step's heading
 const float MARKER_LOST_S   = 1.5;       // facing where the marker was and not seen for this long: search again
 const float FACE_TOL_DEG    = 5.0;       // start driving once the marker is this close to straight ahead
@@ -119,7 +126,7 @@ const float PHI_TOL = 0.003;             // rad (about 0.17 deg)
 const float SETTLE_HOLD_S    = 0.3;
 const float SETTLE_TIMEOUT_S = 3.0;
 
-const float Battery_Voltage = 7.0;
+const float Battery_Voltage = 8.0;
 const unsigned long desired_Ts_ms = 10;
 const unsigned int PRINT_EVERY = 2;      // print a data line every this many samples
 // ----------------------------------------------------------------------------
@@ -260,10 +267,23 @@ unsigned int pass_count = 0;    // samples since the last printed line
 
 // Odometry for the last HISTORY_LEN samples, so a camera reading can be
 // matched with where the robot was when the picture was taken.
-const int HISTORY_LEN = 32;
+const int HISTORY_LEN = 40;             // must cover CAMERA_LATENCY_MS + 50 ms
 const int LATENCY_SAMPLES = min((int)(CAMERA_LATENCY_MS / desired_Ts_ms), HISTORY_LEN - 1);
 float rho_history[HISTORY_LEN], phi_history[HISTORY_LEN];
 int history_head = 0;           // index of the newest sample
+
+// True if the robot turned faster than SIGHTING_MAX_TURN at any time from
+// 50 ms before the newest picture was taken until now (in 50 ms steps)
+bool turnedSinceLastPicture() {
+    const int STEP = 5;                                   // samples = 50 ms
+    const float max_change = SIGHTING_MAX_TURN * STEP * desired_Ts_ms / 1000.0;
+    for (int k = 0; k + STEP <= LATENCY_SAMPLES + STEP; k++) {
+        int a = (history_head + HISTORY_LEN - k) % HISTORY_LEN;
+        int b = (history_head + HISTORY_LEN - k - STEP) % HISTORY_LEN;
+        if (fabs(phi_history[a] - phi_history[b]) > max_change) return true;
+    }
+    return false;
+}
 
 // The marker, in the odometry's coordinates
 float marker_phi = 0;           // heading that points the robot at the marker
@@ -382,14 +402,20 @@ void loop() {
     phi_history[history_head] = phi;
 
     // ---- Camera ----
-    // A sighting is a new message that says the marker is visible. It is
-    // turned into targets in odometry coordinates right away, so nothing
-    // below ever uses a stale camera angle.
+    // A sighting is a new message that says the marker is visible, from a
+    // picture taken while the robot wasn't turning. It is turned into targets
+    // in odometry coordinates right away, so nothing below ever uses a stale
+    // camera angle.
     MarkerMsg msg;
-    bool seen = readMarker(msg) && msg.visible;
-    if (seen) {
-        cam_angle_deg  = msg.angle_cdeg / 100.0;
+    bool got = readMarker(msg) && msg.visible;
+    if (got) {
+        cam_angle_deg  = msg.angle_cdeg / 100.0;    // printed even if not used
         cam_distance_m = msg.distance_mm / 1000.0;
+        if (msg.arrow == ARROW_LEFT)  arrow_votes = min(arrow_votes + 1,  ARROW_MAX_VOTES);
+        if (msg.arrow == ARROW_RIGHT) arrow_votes = max(arrow_votes - 1, -ARROW_MAX_VOTES);
+    }
+    bool seen = got && !turnedSinceLastPicture();
+    if (seen) {
         float angle = cam_angle_deg * PI / 180.0;
         // Marker position seen from the center of rotation: x ahead, y left.
         // The camera sits CAMERA_OFFSET_M ahead of the center.
@@ -400,9 +426,6 @@ void loop() {
         marker_phi = phi_history[then] + atan2(my, mx);
         marker_rho = rho_history[then] + sqrt(mx * mx + my * my) - STOP_DISTANCE_M;
         last_seen_time = current_time;
-
-        if (msg.arrow == ARROW_LEFT)  arrow_votes = min(arrow_votes + 1,  ARROW_MAX_VOTES);
-        if (msg.arrow == ARROW_RIGHT) arrow_votes = max(arrow_votes - 1, -ARROW_MAX_VOTES);
     }
 
     // ---- Stages: choose the targets ----

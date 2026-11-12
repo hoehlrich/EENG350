@@ -13,26 +13,26 @@ ARROW              = 1;      % 1 = arrow points left, 2 = right
 
 %% The run (beacon.ino, "the run")
 TURN_AT_BEACON   = true;     % true: trial type 2, turn 90 deg at the beacon
-STOP_DISTANCE_FT = 1.0;      % stop with the center of rotation this far from the marker
+STOP_DISTANCE_FT = 1.2;      % stop with the center of rotation this far from the marker
 START_DELAY_S    = 1.0;      % s
 SEARCH_DIRECTION = 1;        % +1 search turning left, -1 right
 DEFAULT_TURN     = 1;        % turn if the arrow was never read
 
 %% Camera as the sketch sees it (beacon.ino, "camera")
-CAMERA_OFFSET_M   = 0.10;    % lens ahead of the wheel axis
-CAMERA_LATENCY_MS = 80;      % how old the sketch assumes a reading is
+CAMERA_OFFSET_M   = 0.03;    % lens ahead of the wheel axis
+CAMERA_LATENCY_MS = 250;     % how old the sketch assumes a reading is
 
 %% Camera as it really is (not in the sketch: the model's camera block)
 CAM_FOV_DEG      = 60;       % horizontal field of view
 CAM_RANGE_M      = 3.0;      % marker too small to detect beyond this
 CAM_PERIOD_S     = 0.03;     % time between frames
-CAM_LATENCY_S    = 0.08;     % picture taken -> message at the Arduino
+CAM_LATENCY_S    = 0.25;     % picture taken -> message at the Arduino
 CAM_ARROW_RANGE_M = 2.5;     % arrow can't be read beyond this
 
 %% Search and approach (beacon.ino, "search, approach")
 SEARCH_PHI_DOT  = 1.5;       % rad/s
 SEARCH_STEP_DEG = 45.0;      % 0: turn continuously. > 0: turn this far, pause, repeat
-SEARCH_PAUSE_S  = 0.5;       % s, timed from when the robot has stopped
+SEARCH_PAUSE_S  = 0.8;       % s, timed from when the robot has stopped
 SEARCH_SETTLE_DEG = 2.0;     % deg, counts as stopped within this of the step's heading
 MARKER_LOST_S   = 1.5;       % s
 FACE_TOL_DEG    = 5.0;       % deg
