@@ -39,9 +39,9 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 SKETCH = HERE / "../../beacon/beacon.ino"
 
-# The beacon counts as hit if the center of rotation gets this close [ft].
-# MEASURE: center of rotation to the front of the robot, plus a little.
-FRONT_FT = 0.5
+# The beacon counts as hit if the center of rotation gets this close [ft]:
+# the front of the robot (the Pi cable) is 8 cm (0.26 ft) ahead of the center.
+FRONT_FT = 0.3
 
 SWEEP_HEADINGS = [0, 20, -20, 45, 90, 135, 180, -135, -90, -45]
 SWEEP_DISTANCES = [4, 5, 6]

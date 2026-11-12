@@ -48,12 +48,15 @@ const int   SEARCH_DIRECTION = 1;        // search turning left (+1, CCW seen fr
 const int   DEFAULT_TURN     = 1;        // turn to make if the arrow was never read: +1 left, -1 right
 
 // ------------------------------ camera --------------------------------------
-// How far the camera lens is ahead of the line between the wheels (measured)
-const float CAMERA_OFFSET_M = 0.03;
+// Where the camera lens is, from the center of rotation (measured)
+const float CAMERA_OFFSET_M = 0.03;      // ahead of the line between the wheels
+const float CAMERA_SIDE_M   = -0.06;     // to the left of the center line (negative = right)
 // How old a reading is when it gets here (exposure + processing + I2C). The
 // reading is matched with where the robot was that long ago. 0 = don't.
-// Measured about 250 ms on the robot (Nov 12 trial log).
-const unsigned long CAMERA_LATENCY_MS = 250;
+// Measured about 350 ms with demo2.py on the robot (Nov 12 trial log). Set
+// too low, the early readings put the stop point too far away and the robot
+// overshoots it.
+const unsigned long CAMERA_LATENCY_MS = 350;
 // A sighting is ignored if the robot turned faster than this at any time
 // between just before the picture was taken and now: with the camera's
 // delay, a picture taken mid-turn would be paired with the wrong heading.
@@ -202,12 +205,20 @@ const int ENC_B_PIN[2] = {6, 5};
 
 volatile long count[2] = {0, 0};       // encoder counts, updated in the interrupts
 
+// Channels A and B are read together in one instruction (PIND, the input
+// register of port D: pins 0 to 7, which all four encoder pins are on). With
+// two digitalRead() calls, B was read several microseconds after A, and when
+// the left wheel turned forward B had sometimes already changed, so counts
+// were lost: the robot turned right 15 to 25% further than the encoders said
+// (Nov 12 turn test, fixed by this).
 void encoder1ISR() {
-    if (digitalRead(ENC_A_PIN[0]) != digitalRead(ENC_B_PIN[0])) count[0] += ENC_SIGN[0];
+    uint8_t p = PIND;
+    if (((p >> ENC_A_PIN[0]) & 1) != ((p >> ENC_B_PIN[0]) & 1)) count[0] += ENC_SIGN[0];
     else                                                        count[0] -= ENC_SIGN[0];
 }
 void encoder2ISR() {
-    if (digitalRead(ENC_A_PIN[1]) != digitalRead(ENC_B_PIN[1])) count[1] += ENC_SIGN[1];
+    uint8_t p = PIND;
+    if (((p >> ENC_A_PIN[1]) & 1) != ((p >> ENC_B_PIN[1]) & 1)) count[1] += ENC_SIGN[1];
     else                                                        count[1] -= ENC_SIGN[1];
 }
 
@@ -269,7 +280,7 @@ unsigned int pass_count = 0;    // samples since the last printed line
 
 // Odometry for the last HISTORY_LEN samples, so a camera reading can be
 // matched with where the robot was when the picture was taken.
-const int HISTORY_LEN = 40;             // must cover CAMERA_LATENCY_MS + 50 ms
+const int HISTORY_LEN = 48;             // samples; must be more than CAMERA_LATENCY_MS / 10 + 5
 const int LATENCY_SAMPLES = min((int)(CAMERA_LATENCY_MS / desired_Ts_ms), HISTORY_LEN - 1);
 float rho_history[HISTORY_LEN], phi_history[HISTORY_LEN];
 int history_head = 0;           // index of the newest sample
@@ -420,9 +431,10 @@ void loop() {
     if (seen) {
         float angle = cam_angle_deg * PI / 180.0;
         // Marker position seen from the center of rotation: x ahead, y left.
-        // The camera sits CAMERA_OFFSET_M ahead of the center.
+        // The camera sits CAMERA_OFFSET_M ahead of the center and
+        // CAMERA_SIDE_M to its left.
         float mx = CAMERA_OFFSET_M + cam_distance_m * cos(angle);
-        float my = cam_distance_m * sin(angle);
+        float my = CAMERA_SIDE_M + cam_distance_m * sin(angle);
         // Where the robot was when the picture was taken
         int then = (history_head + HISTORY_LEN - LATENCY_SAMPLES) % HISTORY_LEN;
         marker_phi = phi_history[then] + atan2(my, mx);
@@ -473,7 +485,12 @@ void loop() {
             // sightings the robot finishes on the last ones by odometry.
             if (seen) {
                 phi_target = marker_phi;
-                rho_target = marker_rho;
+                // Never ask the robot to back up. Readings from far away
+                // tend to overestimate the distance, so later ones move the
+                // target closer. If it moves closer than where the reference
+                // can still stop, stop there instead (a few cm past it).
+                float stop_point = rho_prof.pos + rho_prof.vel * fabs(rho_prof.vel) / (2 * RHO_ACCEL);
+                rho_target = max(marker_rho, stop_point);
             }
             if (fabs(rho_target - rho) < ARRIVE_TOL_M && fabs(rho_prof.vel) < ARRIVE_SPEED) {
                 arrived_time = current_time;

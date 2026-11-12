@@ -61,7 +61,7 @@ if seen
     angle = cam(3) * pi / 180;
     % Marker position seen from the center of rotation: x ahead, y left
     mx = P.CAMERA_OFFSET_M + cam(4) * cos(angle);
-    my = cam(4) * sin(angle);
+    my = P.CAMERA_SIDE_M + cam(4) * sin(angle);
     latency_samples = min(round(P.CAMERA_LATENCY_MS / 1000 / P.Ts), HISTORY_LEN - 1);
     then = mod(head - 1 - latency_samples, HISTORY_LEN) + 1;
     marker_phi = phi_history(then) + atan2(my, mx);

@@ -20,13 +20,14 @@ DEFAULT_TURN     = 1;        % turn if the arrow was never read
 
 %% Camera as the sketch sees it (beacon.ino, "camera")
 CAMERA_OFFSET_M   = 0.03;    % lens ahead of the wheel axis
-CAMERA_LATENCY_MS = 250;     % how old the sketch assumes a reading is
+CAMERA_SIDE_M     = -0.06;   % lens left of the center line (negative = right)
+CAMERA_LATENCY_MS = 350;     % how old the sketch assumes a reading is
 
 %% Camera as it really is (not in the sketch: the model's camera block)
 CAM_FOV_DEG      = 60;       % horizontal field of view
 CAM_RANGE_M      = 3.0;      % marker too small to detect beyond this
 CAM_PERIOD_S     = 0.03;     % time between frames
-CAM_LATENCY_S    = 0.25;     % picture taken -> message at the Arduino
+CAM_LATENCY_S    = 0.35;     % picture taken -> message at the Arduino
 CAM_ARROW_RANGE_M = 2.5;     % arrow can't be read beyond this
 
 %% Search and approach (beacon.ino, "search, approach")
@@ -82,7 +83,7 @@ Stop_Time = 120;             % s, the model stops itself when the run is done
 P = struct();
 for name = ["BEACON_HEADING_DEG" "BEACON_DISTANCE_FT" "ARROW" "TURN_AT_BEACON" ...
             "STOP_DISTANCE_FT" "START_DELAY_S" "SEARCH_DIRECTION" "DEFAULT_TURN" ...
-            "CAMERA_OFFSET_M" "CAMERA_LATENCY_MS" "CAM_FOV_DEG" "CAM_RANGE_M" ...
+            "CAMERA_OFFSET_M" "CAMERA_SIDE_M" "CAMERA_LATENCY_MS" "CAM_FOV_DEG" "CAM_RANGE_M" ...
             "CAM_PERIOD_S" "CAM_LATENCY_S" "CAM_ARROW_RANGE_M" "SEARCH_PHI_DOT" ...
             "SEARCH_STEP_DEG" "SEARCH_PAUSE_S" "SEARCH_SETTLE_DEG" "MARKER_LOST_S" "FACE_TOL_DEG" ...
             "FACE_RATE" "ARRIVE_TOL_M" "ARRIVE_SPEED" "ARROW_MIN_VOTES" ...

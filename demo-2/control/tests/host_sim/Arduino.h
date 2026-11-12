@@ -38,6 +38,8 @@ unsigned long micros();
 void pinMode(int pin, int mode);
 void digitalWrite(int pin, int value);
 int digitalRead(int pin);
+uint8_t readPortD();                    // pins 0 to 7 as one byte, as the Uno's PIND register
+#define PIND (readPortD())
 void analogWrite(int pin, int value);   // a float argument is cut to an int, as on the Uno
 void attachInterrupt(int pin, void (*isr)(), int mode);
 inline int digitalPinToInterrupt(int pin) { return pin; }

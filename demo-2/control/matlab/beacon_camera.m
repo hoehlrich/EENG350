@@ -34,8 +34,8 @@ if mod(calls, frame_samples) == 0
 
     % From the camera lens, in the robot's axes (ahead, left). With no
     % camera offset this is the handout's phi_s = atan2(ys-y, xs-x) - phi.
-    dx = beacon_x - (x + P.CAMERA_OFFSET_M * cos(phi));
-    dy = beacon_y - (y + P.CAMERA_OFFSET_M * sin(phi));
+    dx = beacon_x - (x + P.CAMERA_OFFSET_M * cos(phi) - P.CAMERA_SIDE_M * sin(phi));
+    dy = beacon_y - (y + P.CAMERA_OFFSET_M * sin(phi) + P.CAMERA_SIDE_M * cos(phi));
     ahead = dx * cos(phi) + dy * sin(phi);
     left = -dx * sin(phi) + dy * cos(phi);
     angle_deg = atan2(left, ahead) * 180 / pi;

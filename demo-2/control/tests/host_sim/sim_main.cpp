@@ -55,7 +55,8 @@ struct Settings {
     double motor_sigma = 5.0;     // 1/s
     double friction_v = 0.5;      // V lost to friction
     double battery_v = 7.0;       // V
-    double camera_offset = 0.10;  // m, lens ahead of the wheel axis
+    double camera_offset = 0.03;  // m, lens ahead of the wheel axis
+    double camera_side = -0.06;   // m, lens to the left of the center line (negative = right)
 
     // The camera and Pi
     double fov_deg = 60;          // horizontal field of view
@@ -69,6 +70,7 @@ struct Settings {
                                   // one reading typed into vision/send_marker.py sends)
     double angle_noise_deg = 0.15;
     double distance_noise = 0.01; // fraction of the distance, per meter of distance
+    double distance_scale = 1.0;  // reported distance = true x this (1.066 = the home-printed marker)
     double arrow_range = 2.5;     // m, arrow can't be read beyond this
     double arrow_miss = 0.2;      // chance a frame reports the arrow as unknown
     double arrow_wrong = 0.02;    // chance a frame reports the wrong arrow
@@ -83,12 +85,13 @@ const Name NAMES[] = {
     {"wheel_radius", &set.wheel_radius}, {"wheel_base", &set.wheel_base},
     {"motor_gain", &set.motor_gain}, {"motor_sigma", &set.motor_sigma},
     {"friction_v", &set.friction_v}, {"battery_v", &set.battery_v},
-    {"camera_offset", &set.camera_offset}, {"fov_deg", &set.fov_deg},
+    {"camera_offset", &set.camera_offset}, {"camera_side", &set.camera_side}, {"fov_deg", &set.fov_deg},
     {"max_range", &set.max_range}, {"frame_period", &set.frame_period},
     {"latency", &set.latency}, {"blur_limit", &set.blur_limit},
     {"detect_miss", &set.detect_miss}, {"frames_limit", &set.frames_limit},
     {"camera_start", &set.camera_start},
     {"angle_noise_deg", &set.angle_noise_deg}, {"distance_noise", &set.distance_noise},
+    {"distance_scale", &set.distance_scale},
     {"arrow_range", &set.arrow_range}, {"arrow_miss", &set.arrow_miss},
     {"arrow_wrong", &set.arrow_wrong},
 };
@@ -149,8 +152,8 @@ double beaconBearingDeg() {
 // ------------------------------ camera and Pi -------------------------------
 // One camera frame: what demo2.py would measure, packed as it would send it.
 void takeFrame(double time) {
-    double camera_x = x + set.camera_offset * cos(heading);
-    double camera_y = y + set.camera_offset * sin(heading);
+    double camera_x = x + set.camera_offset * cos(heading) - set.camera_side * sin(heading);
+    double camera_y = y + set.camera_offset * sin(heading) + set.camera_side * cos(heading);
     double dx = beacon_x - camera_x, dy = beacon_y - camera_y;
     double ahead = dx * cos(heading) + dy * sin(heading);
     double left = -dx * sin(heading) + dy * cos(heading);
@@ -173,6 +176,7 @@ void takeFrame(double time) {
     if (visible) {
         angle_deg += set.angle_noise_deg * noise(rng);
         distance *= 1 + set.distance_noise * distance * noise(rng);
+        distance *= set.distance_scale;
 
         int arrow = 0;
         if (distance < set.arrow_range && chance(rng) >= set.arrow_miss) {
@@ -255,6 +259,11 @@ unsigned long micros() { return sim::now_us; }
 void pinMode(int pin, int mode) { if (mode == INPUT_PULLUP) sim::pin_level[pin] = HIGH; }
 void digitalWrite(int pin, int value) { sim::pin_level[pin] = value; }
 int digitalRead(int pin) { return sim::pin_level[pin]; }
+uint8_t readPortD() {
+    uint8_t p = 0;
+    for (int pin = 0; pin < 8; pin++) if (sim::pin_level[pin]) p |= 1 << pin;
+    return p;
+}
 void analogWrite(int pin, int value) { sim::pwm_duty[pin] = constrain(value, 0, 255); }
 void attachInterrupt(int pin, void (*isr)(), int) { sim::pin_isr[pin] = isr; }
 
