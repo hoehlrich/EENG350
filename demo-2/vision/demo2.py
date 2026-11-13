@@ -43,6 +43,7 @@ import struct
 import time
 import threading
 import queue
+import signal
 import subprocess
 
 # ----------------------------------------------------
@@ -251,7 +252,16 @@ def send(bus, data):
 # ----------------------------------------------------
 # MAIN LOOP
 # ----------------------------------------------------
+def stop(signum, frame):
+    # SIGTERM (what run_trial.sh's kill sends) -> the same clean exit as
+    # Ctrl+C, so the camera is put back on automatic exposure. The camera
+    # keeps its settings until it loses power, so a fixed exposure left
+    # behind would also be used by main's demo2.py, which never sets one.
+    raise KeyboardInterrupt
+
+
 def main():
+    signal.signal(signal.SIGTERM, stop)
     calibration = np.load(os.path.join(HERE, "camera_calibration.npz"))
     camera_matrix = calibration["camera_matrix"]
     dist_coeffs = calibration["dist_coeffs"]
@@ -343,12 +353,14 @@ def main():
                     break
     except KeyboardInterrupt:
         pass
-
-    send(bus, make_message(False, 0, 0, ARROW_UNKNOWN))   # leave the Arduino on "no marker"
-    camera.release()
-    if EXPOSURE_100US is not None:
-        set_exposure(None)              # leave the camera on automatic exposure
-    cv2.destroyAllWindows()
+    finally:
+        # Runs on Ctrl+C, q, SIGTERM and crashes alike. The exposure goes
+        # first: it is the one thing that outlives this program.
+        if EXPOSURE_100US is not None:
+            set_exposure(None)          # leave the camera on automatic exposure
+        send(bus, make_message(False, 0, 0, ARROW_UNKNOWN))   # leave the Arduino on "no marker"
+        camera.release()
+        cv2.destroyAllWindows()
 
 
 if __name__ == "__main__":
