@@ -43,7 +43,7 @@
 const bool  TURN_AT_BEACON   = true;     // true: trial type 2, turn 90 deg at the beacon. false: type 1, stop there
 const float STOP_DISTANCE_FT = 0.8;      // stop with the center of rotation this far from the marker (must be < 1.5).
                                          // The front of the robot (the camera) is 10.5 cm ahead of the center, so it stops ~0.14 m short
-const float START_DELAY_S    = 1.0;      // motors off this long after reset
+const float START_DELAY_S    = 0.2;      // motors off this long after reset (the trial scripts start the vision first)
 const int   SEARCH_DIRECTION = 1;        // search turning left (+1, CCW seen from above) or right (-1)
 const int   DEFAULT_TURN     = 1;        // turn to make if the arrow was never read: +1 left, -1 right
 
@@ -127,8 +127,8 @@ const float MAX_VOLTAGE = 5.0;           // V
 
 // Stopping
 const float RHO_TOL = 0.003;             // m (about 0.1 in)
-const float PHI_TOL = 0.003;             // rad (about 0.17 deg)
-const float SETTLE_HOLD_S    = 0.3;
+const float PHI_TOL = 0.017;             // rad (about 1 deg): the final turn ends within this
+const float SETTLE_HOLD_S    = 0.1;
 const float SETTLE_TIMEOUT_S = 3.0;
 
 const float Battery_Voltage = 8.0;

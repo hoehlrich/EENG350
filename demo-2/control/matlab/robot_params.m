@@ -14,7 +14,7 @@ ARROW              = 1;      % 1 = arrow points left, 2 = right
 %% The run (beacon.ino, "the run")
 TURN_AT_BEACON   = true;     % true: trial type 2, turn 90 deg at the beacon
 STOP_DISTANCE_FT = 0.8;      % stop with the center of rotation this far from the marker
-START_DELAY_S    = 1.0;      % s
+START_DELAY_S    = 0.2;      % s
 SEARCH_DIRECTION = 1;        % +1 search turning left, -1 right
 DEFAULT_TURN     = 1;        % turn if the arrow was never read
 
@@ -73,7 +73,7 @@ MAX_PHI_DOT = 2.25;          % rad/s
 PHI_ACCEL   = 4.5;           % rad/s^2
 
 MAX_VOLTAGE = 5.0;           % V, cap on each wheel
-SETTLE_HOLD_S = 0.3;         % s
+SETTLE_HOLD_S = 0.1;         % s
 Ts = 0.01;                   % Arduino loop time (s)
 
 Stop_Time = 120;             % s, the model stops itself when the run is done
