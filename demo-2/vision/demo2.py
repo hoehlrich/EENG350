@@ -75,7 +75,7 @@ RED_HIGH_2 = (179, 255, 255)
 # left (green) arrow blue and the right (red) arrow pink. True looks for blue
 # on the left and pink on the right instead. SET BACK TO False for the real
 # beacons.
-HOME_PRINTER_COLORS = True
+HOME_PRINTER_COLORS = False
 if HOME_PRINTER_COLORS:
     GREEN_LOW = (85, 60, 60)        # "green" = left arrow: blue/cyan, hue 85-130
     GREEN_HIGH = (130, 255, 255)
