@@ -64,21 +64,27 @@ const unsigned long CAMERA_LATENCY_MS = 350;
 const float SIGHTING_MAX_TURN = 0.3;     // rad/s
 
 // ------------------------------ search, approach ----------------------------
-// The search turns about SEARCH_STEP_DEG quickly, stops, looks for
-// SEARCH_PAUSE_S, and repeats. The camera only detects the marker reliably
-// when the robot is still (while turning, even slowly, the picture is too
-// blurred). A step need not be exact: once the robot is within
-// SEARCH_SETTLE_DEG of the step's heading it holds wherever it is, instead of
-// creeping onto the exact heading, and the look starts. The camera sees about
-// 58 deg, so steps of 45 +- 5 deg still overlap. SEARCH_STEP_DEG = 0 turns
-// continuously instead. The search turns have their own speed and
-// acceleration; turning to face the marker and the final turn use
-// MAX_PHI_DOT and PHI_ACCEL.
-const float SEARCH_PHI_DOT    = 4.5;     // rad/s, turning speed between looks
-const float SEARCH_PHI_ACCEL  = 18.0;    // rad/s^2: a 45 deg step takes about 0.42 s of turning
-const float SEARCH_STEP_DEG   = 45.0;    // 0: turn continuously. > 0: turn this far, pause to look, repeat
-const float SEARCH_PAUSE_S    = 0.8;     // look this long once stopped. Readings are ~0.35 s old, so ~0.4 s of still pictures
-const float SEARCH_SETTLE_DEG = 5.0;     // a step counts as done within this of its heading
+// CONTINUOUS SEARCH (continuous-search branch). The robot turns steadily at
+// SEARCH_PHI_DOT until the marker is seen. That only works because
+// vision/demo2.py sets a short fixed exposure on this branch: while turning,
+// the marker smears by (turn rate) x (exposure) x 1114 px/rad, and the
+// detector needs the smear under about 3 px (the marker is ~30 px wide at
+// 6 ft). So the speed is tied to EXPOSURE_100US in demo2.py:
+//     SEARCH_PHI_DOT = 3 / (1114 x exposure in s)
+//     exposure 1.5 ms (15) -> 1.8 rad/s, a full turn in 3.5 s
+//     exposure 2.5 ms (25) -> 1.1 rad/s, a full turn in 5.7 s
+//     exposure 5 ms   (50) -> 0.54 rad/s, a full turn in 11.6 s
+// While searching, sightings count even though the robot is turning: the
+// turn rate is steady, so pairing each reading with the heading
+// CAMERA_LATENCY_MS earlier is accurate to a few degrees. The first one
+// starts FACE, which brakes, turns back to the marker and re-checks once
+// still. SEARCH_STEP_DEG > 0 goes back to main's stop-and-look search (which
+// also needs main's SEARCH_PHI_DOT, SEARCH_PHI_ACCEL and automatic exposure).
+const float SEARCH_PHI_DOT    = 1.1;     // rad/s, see above
+const float SEARCH_PHI_ACCEL  = 4.5;     // rad/s^2, only for getting up to speed
+const float SEARCH_STEP_DEG   = 0.0;     // 0: turn continuously. > 0: turn this far, pause to look, repeat
+const float SEARCH_PAUSE_S    = 0.8;     // stop-and-look only: look this long once stopped
+const float SEARCH_SETTLE_DEG = 5.0;     // stop-and-look only: a step counts as done within this of its heading
 const float MARKER_LOST_S   = 1.5;       // facing where the marker was and not seen for this long: search again
 const float FACE_TOL_DEG    = 5.0;       // start driving once the marker is this close to straight ahead
 const float FACE_RATE       = 0.15;      // ... and the turn has slowed to this [rad/s]
@@ -433,7 +439,8 @@ void loop() {
         if (msg.arrow == ARROW_LEFT)  arrow_votes = min(arrow_votes + 1,  ARROW_MAX_VOTES);
         if (msg.arrow == ARROW_RIGHT) arrow_votes = max(arrow_votes - 1, -ARROW_MAX_VOTES);
     }
-    bool seen = got && !turnedSinceLastPicture();
+    // While searching (a steady turn) sightings count anyway; see SEARCH_PHI_DOT
+    bool seen = got && (stage == SEARCH || !turnedSinceLastPicture());
     if (seen) {
         float angle = cam_angle_deg * PI / 180.0;
         // Marker position seen from the center of rotation: x ahead, y left.

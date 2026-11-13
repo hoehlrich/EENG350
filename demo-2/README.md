@@ -14,6 +14,29 @@ start moving within 30 s of the go signal and nothing may be plugged into it
 or sent to it during a trial. Trials are scored on time and on the number of
 failures. The full rules are in `resources/Demo2Instructions.pdf`.
 
+## This branch: continuous search (experimental)
+
+On `main` the search turns 45°, stops, and looks, because with automatic
+exposure the camera can't find the marker while the robot moves. On this
+branch the robot turns steadily instead, and `vision/demo2.py` sets a short
+fixed exposure (`EXPOSURE_100US`, 2.5 ms) so the marker stays sharp while
+turning. The search speed (`SEARCH_PHI_DOT` in `beacon.ino`) is tied to the
+exposure: the marker smears by turn rate × exposure × 1114 px/rad, and that
+has to stay under about 3 px.
+
+| | Mean trial | Slowest trial |
+|---|---|---|
+| `main`: stop and look | 9.1 s | 15.0 s |
+| this branch, 2.5 ms exposure, 1.1 rad/s | 7.4 s | 11.1 s |
+| this branch, 5 ms exposure, 0.54 rad/s | 9.2 s | 15.8 s |
+
+(PC simulation, `control/tests/host_sim`.) It only pays off if the camera
+still finds the marker at 6 ft with a 2.5 ms exposure, which is about 25
+times less light than automatic exposure uses indoors. Check that first:
+run `demo2.py` with the robot still, beacon at 6 ft, and watch the
+`brightness` and whether the marker is found. If it needs 5 ms or more,
+stay on `main`.
+
 ## How it works
 
 The Pi looks and the Arduino drives. For every camera frame the Pi sends the

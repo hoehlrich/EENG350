@@ -43,6 +43,7 @@ import struct
 import time
 import threading
 import queue
+import subprocess
 
 # ----------------------------------------------------
 # SETTINGS
@@ -88,6 +89,27 @@ MIN_FILL = 0.12                     # fraction of the patch that must be the col
 MAX_FILL = 0.70                     # more than this is a wall/shirt, not an arrow
 
 SHOW_WINDOW = "DISPLAY" in os.environ   # no window when run over SSH or at boot
+
+# CONTINUOUS SEARCH (continuous-search branch): a short fixed exposure, so the
+# marker stays sharp while the robot turns. In the camera's units, 100 us:
+# 25 = 2.5 ms. It must match SEARCH_PHI_DOT in beacon.ino (see there). Too
+# short and the picture is too dark to find the marker at 6 ft: watch the
+# brightness printed every 2 s (the average pixel, 0-255) and the camera
+# window. The camera is put back on automatic exposure when this exits.
+# None = automatic exposure, as on main.
+EXPOSURE_100US = 25
+
+
+def set_exposure(value):
+    # value: exposure in 100 us units, or None for automatic exposure
+    if value is None:
+        args = ["-c", "auto_exposure=3"]
+    else:
+        args = ["-c", "auto_exposure=1", "-c", "exposure_time_absolute=%d" % value]
+    try:
+        subprocess.run(["v4l2-ctl", "-d", "/dev/video0"] + args, check=True)
+    except (OSError, subprocess.CalledProcessError) as e:
+        print("Could not set the exposure:", e)
 
 # ----------------------------------------------------
 # SETUP
@@ -241,6 +263,9 @@ def main():
     camera.set(cv2.CAP_PROP_FRAME_WIDTH, FRAME_WIDTH)
     camera.set(cv2.CAP_PROP_FRAME_HEIGHT, FRAME_HEIGHT)
     camera.set(cv2.CAP_PROP_AUTOFOCUS, 0)
+    camera.set(cv2.CAP_PROP_FPS, 30)
+    set_exposure(EXPOSURE_100US)
+    print("exposure:", "automatic" if EXPOSURE_100US is None else "%.1f ms fixed" % (EXPOSURE_100US / 10))
     settle_until = time.time() + 0.5
     while time.time() < settle_until:   # let auto exposure settle
         camera.read()
@@ -248,6 +273,7 @@ def main():
     arrow_names = {ARROW_UNKNOWN: "?", ARROW_LEFT: "L", ARROW_RIGHT: "R"}
     frames = 0
     sent = 0
+    brightness = 0.0                    # sum of the average pixel of each frame
     last_print = time.time()
     last_lcd = 0
 
@@ -272,19 +298,22 @@ def main():
             if send(bus, make_message(visible, angle, distance, arrow)):
                 sent += 1
             frames += 1
+            brightness += gray.mean()
 
             # Terminal, every 2 s
             now = time.time()
             if now - last_print >= 2:
                 fps = frames / (now - last_print)
+                light = brightness / max(frames, 1)
                 if visible:
-                    print(f"{fps:4.1f} fps  sent {sent}/{frames}  "
+                    print(f"{fps:4.1f} fps  brightness {light:3.0f}  sent {sent}/{frames}  "
                           f"angle {angle:6.2f} deg  dist {distance:5.3f} m  "
                           f"arrow {arrow_names[arrow]}")
                 else:
-                    print(f"{fps:4.1f} fps  sent {sent}/{frames}  no marker")
+                    print(f"{fps:4.1f} fps  brightness {light:3.0f}  sent {sent}/{frames}  no marker")
                 frames = 0
                 sent = 0
+                brightness = 0.0
                 last_print = now
 
             # LCD, twice a second
@@ -317,6 +346,8 @@ def main():
 
     send(bus, make_message(False, 0, 0, ARROW_UNKNOWN))   # leave the Arduino on "no marker"
     camera.release()
+    if EXPOSURE_100US is not None:
+        set_exposure(None)              # leave the camera on automatic exposure
     cv2.destroyAllWindows()
 
 
