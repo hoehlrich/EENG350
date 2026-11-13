@@ -19,7 +19,7 @@ SEARCH_DIRECTION = 1;        % +1 search turning left, -1 right
 DEFAULT_TURN     = 1;        % turn if the arrow was never read
 
 %% Camera as the sketch sees it (beacon.ino, "camera")
-CAMERA_OFFSET_M   = 0.105;    % lens ahead of the wheel axis
+CAMERA_OFFSET_M   = 0.13;     % lens ahead of the wheel axis
 CAMERA_SIDE_M     = 0.0;     % lens left of the center line (negative = right)
 CAMERA_LATENCY_MS = 350;     % how old the sketch assumes a reading is
 
@@ -64,16 +64,16 @@ Kp_rho = 3.0;                % (m/s) per m
 Ki_rho = 2.0;                % (m/s) per m*s
 Kp_phi = 4.0;                % (rad/s) per rad
 Ki_phi = 2.0;                % (rad/s) per rad*s
-RHO_DOT_LIMIT = 0.9;       % m/s
+RHO_DOT_LIMIT = 1.125;       % m/s
 PHI_DOT_LIMIT = 6.75;        % rad/s
 
 % Reference profile
-MAX_RHO_DOT = 0.6;          % m/s
+MAX_RHO_DOT = 0.75;          % m/s
 RHO_ACCEL   = 1.35;          % m/s^2
 MAX_PHI_DOT = 2.25;          % rad/s
 PHI_ACCEL   = 4.5;           % rad/s^2
 
-MAX_VOLTAGE = 5.0;           % V, cap on each wheel
+MAX_VOLTAGE = 6.0;           % V, cap on each wheel
 TURN_DONE_TOL_DEG = 10.0;    % deg, the final turn ends this close to its target
 Ts = 0.01;                   % Arduino loop time (s)
 

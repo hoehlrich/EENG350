@@ -42,14 +42,14 @@
 // ------------------------------ the run -------------------------------------
 const bool  TURN_AT_BEACON   = true;     // true: trial type 2, turn 90 deg at the beacon. false: type 1, stop there
 const float STOP_DISTANCE_FT = 1.0;      // stop with the center of rotation this far from the marker (must be < 1.5).
-                                         // The front of the robot (the camera) is 10.5 cm ahead of the center, so it stops ~0.2 m short
+                                         // The front of the robot (the camera lens) is 13 cm ahead of the center, so it stops ~0.17 m short
 const float START_DELAY_S    = 0.2;      // motors off this long after reset (the trial scripts start the vision first)
 const int   SEARCH_DIRECTION = 1;        // search turning left (+1, CCW seen from above) or right (-1)
 const int   DEFAULT_TURN     = 1;        // turn to make if the arrow was never read: +1 left, -1 right
 
 // ------------------------------ camera --------------------------------------
 // Where the camera lens is, from the center of rotation (measured)
-const float CAMERA_OFFSET_M = 0.105;     // ahead of the line between the wheels
+const float CAMERA_OFFSET_M = 0.13;      // ahead of the line between the wheels (moved forward when the brim went on)
 const float CAMERA_SIDE_M   = 0.0;       // to the left of the center line (negative = right)
 // How old a reading is when it gets here (exposure + processing + I2C). The
 // reading is matched with where the robot was that long ago. 0 = don't.
@@ -112,7 +112,7 @@ const float Kp_rho = 3.0;                // (m/s) per m
 const float Ki_rho = 2.0;                // (m/s) per m*s
 const float Kp_phi = 4.0;                // (rad/s) per rad
 const float Ki_phi = 2.0;                // (rad/s) per rad*s
-const float RHO_DOT_LIMIT = 0.9;         // limit on rho_dot_d [m/s], 1.5 x MAX_RHO_DOT
+const float RHO_DOT_LIMIT = 1.125;       // limit on rho_dot_d [m/s], 1.5 x MAX_RHO_DOT
 const float PHI_DOT_LIMIT = 6.75;        // limit on phi_dot_d [rad/s], 1.5 x SEARCH_PHI_DOT
 
 // Reference profile. These set how long a run takes. They are 4.5 times
@@ -120,16 +120,16 @@ const float PHI_DOT_LIMIT = 6.75;        // limit on phi_dot_d [rad/s], 1.5 x SE
 // on this robot, and 1.5 times the values used on Nov 12 (0.3 m/s,
 // 0.3 m/s^2, 1.5 rad/s, 3 rad/s^2), which also worked. If the wheels slip,
 // lower the two ACCELs first.
-const float MAX_RHO_DOT = 0.6;           // m/s. Faster overshoots more when the camera delay is off: keep STOP_DISTANCE_FT at 1.0
+const float MAX_RHO_DOT = 0.75;          // m/s. Faster overshoots more if the camera delay is longer than CAMERA_LATENCY_MS: keep STOP_DISTANCE_FT at 1.0
 const float RHO_ACCEL   = 1.35;          // m/s^2: up to MAX_RHO_DOT, or back to a stop, in 0.33 s. If the
                                          // wheels slip or the robot lurches, 0.9 gives most of the gain
 const float MAX_PHI_DOT = 2.25;          // rad/s
 const float PHI_ACCEL   = 4.5;           // rad/s^2
 
 // Hard cap on each wheel's voltage, so a sign or calibration mistake can't
-// send the robot off at full speed. At the speeds above the robot needs up
-// to about 4.4 V in simulation (3.0 was enough at Demo 1's speeds).
-const float MAX_VOLTAGE = 5.0;           // V
+// send the robot off at full speed. At 0.75 m/s the robot needs about 5 V
+// per wheel just to hold speed, so 6 V (3.0 was enough at Demo 1's speeds).
+const float MAX_VOLTAGE = 6.0;           // V
 
 // Stopping
 const float RHO_TOL = 0.003;             // m (about 0.1 in)

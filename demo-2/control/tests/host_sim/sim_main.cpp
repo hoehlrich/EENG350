@@ -55,7 +55,7 @@ struct Settings {
     double motor_sigma = 5.0;     // 1/s
     double friction_v = 0.5;      // V lost to friction
     double battery_v = 7.0;       // V
-    double camera_offset = 0.105; // m, lens ahead of the wheel axis
+    double camera_offset = 0.13;  // m, lens ahead of the wheel axis
     double camera_side = 0.0;     // m, lens to the left of the center line (negative = right)
 
     // The camera and Pi
