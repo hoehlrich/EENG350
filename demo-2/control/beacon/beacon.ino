@@ -128,7 +128,7 @@ const float MAX_VOLTAGE = 5.0;           // V
 // Stopping
 const float RHO_TOL = 0.003;             // m (about 0.1 in)
 const float PHI_TOL = 0.017;             // rad (about 1 deg): the final turn ends within this
-const float SETTLE_HOLD_S    = 0.1;
+const float TURN_DONE_TOL_DEG = 10.0;    // the final turn ends this close to 90 deg (it coasts on a little)
 const float SETTLE_TIMEOUT_S = 3.0;
 
 const float Battery_Voltage = 8.0;
@@ -195,6 +195,7 @@ bool readMarker(MarkerMsg &m) {
 const float STOP_DISTANCE_M = STOP_DISTANCE_FT * 0.3048;
 const float SEARCH_STEP_RAD = SEARCH_STEP_DEG * PI / 180.0;
 const float SEARCH_SETTLE_RAD = SEARCH_SETTLE_DEG * PI / 180.0;
+const float TURN_DONE_TOL_RAD = TURN_DONE_TOL_DEG * PI / 180.0;
 const float FACE_TOL_RAD    = FACE_TOL_DEG * PI / 180.0;
 
 const int EN_PIN       = 4;
@@ -574,11 +575,13 @@ void loop() {
         if (freeze_rho && rho_done) integral_rho -= e_rho * dt;
         if (freeze_phi && phi_done) integral_phi -= e_phi * dt;
 
-        // The last turn ends once settled, or after the timeout if friction holds it off target
+        // The last turn need not be precise: it ends as soon as the heading is
+        // within TURN_DONE_TOL_DEG of its target, and the robot coasts the
+        // rest of the way (or after the timeout, if something holds it back)
         if (stage == TURN) {
-            bool settled   = in_band && current_time - band_since >= SETTLE_HOLD_S;
-            bool timed_out = profile_done_time >= 0 && current_time - profile_done_time >= SETTLE_TIMEOUT_S;
-            if (settled || timed_out) stop_now = true;
+            bool close_enough = fabs(phi_target - phi) < TURN_DONE_TOL_RAD;
+            bool timed_out    = profile_done_time >= 0 && current_time - profile_done_time >= SETTLE_TIMEOUT_S;
+            if (close_enough || timed_out) stop_now = true;
         }
     }
 

@@ -73,7 +73,7 @@ MAX_PHI_DOT = 2.25;          % rad/s
 PHI_ACCEL   = 4.5;           % rad/s^2
 
 MAX_VOLTAGE = 5.0;           % V, cap on each wheel
-SETTLE_HOLD_S = 0.1;         % s
+TURN_DONE_TOL_DEG = 10.0;    % deg, the final turn ends this close to its target
 Ts = 0.01;                   % Arduino loop time (s)
 
 Stop_Time = 120;             % s, the model stops itself when the run is done
@@ -88,7 +88,7 @@ for name = ["BEACON_HEADING_DEG" "BEACON_DISTANCE_FT" "ARROW" "TURN_AT_BEACON" .
             "SEARCH_STEP_DEG" "SEARCH_PAUSE_S" "SEARCH_SETTLE_DEG" "MARKER_LOST_S" "FACE_TOL_DEG" ...
             "FACE_RATE" "ARRIVE_TOL_M" "ARRIVE_SPEED" "ARROW_MIN_VOTES" ...
             "ARROW_MAX_VOTES" "ARROW_WAIT_S" "MAX_RHO_DOT" "RHO_ACCEL" ...
-            "MAX_PHI_DOT" "PHI_ACCEL" "SETTLE_HOLD_S" "Ts"]
+            "MAX_PHI_DOT" "PHI_ACCEL" "TURN_DONE_TOL_DEG" "Ts"]
     P.(name) = double(eval(name));
 end
 clear name

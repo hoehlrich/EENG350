@@ -73,7 +73,7 @@ the robot finishes the approach on the last targets.
 | `SEARCH` (1) | φ target kept half a turn ahead, so the robot turns steadily at `SEARCH_PHI_DOT`. With `SEARCH_STEP_DEG` > 0 it instead turns that far, stops for `SEARCH_PAUSE_S` to look, and repeats | `FACE` on the first sighting |
 | `FACE` (2) | φ target = `marker_phi`, updated on every sighting | `APPROACH` once the marker is within `FACE_TOL_DEG` of straight ahead and the turn has slowed. Back to `SEARCH` if the robot is facing where the marker was and hasn't seen it for `MARKER_LOST_S` |
 | `APPROACH` (3) | φ target = `marker_phi` and ρ target = `marker_rho`, both updated on every sighting | Arrived once within `ARRIVE_TOL_M` of the stop point and nearly stopped. Type 1: `DONE`. Type 2: `TURN` as soon as the arrow is known |
-| `TURN` (4) | φ target = heading that faces the marker ± 90° | `DONE` once settled, as in Demo 1 |
+| `TURN` (4) | φ target = heading that faces the marker ± 90° | `DONE` as soon as the heading is within `TURN_DONE_TOL_DEG` (10°) of the target. The motors go off and the robot coasts the rest of the way: it need not be precise |
 | `DONE` (5) | Motors off | |
 
 **The arrow.** Every sighting that includes an arrow reading is a vote:
@@ -86,9 +86,9 @@ answer it waits `ARROW_WAIT_S`, still looking, then turns `DEFAULT_TURN`.
 profile used to assume its target never moved. Now, if the target jumps so
 close that the profile can't stop in time, the profile brakes at its
 acceleration limit, runs past and comes back, instead of snapping to the
-target at full speed. And the stage's "settled" test is only used to end
-the last turn. The earlier stages end on the looser tests in the table,
-because the demo scores time, and 1.5 ft is a wide target.
+target at full speed. And no stage waits for the robot to settle on its
+target: every stage ends on the loose tests in the table, because the demo
+scores time, 1.5 ft is a wide target, and the 90° turn is judged by eye.
 
 ## Settings
 

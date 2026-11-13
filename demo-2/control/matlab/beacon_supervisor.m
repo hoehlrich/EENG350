@@ -23,16 +23,15 @@ function [rho_ref, rho_dot_ref, rho_int, phi_ref, phi_dot_ref, phi_int, stage_ou
 %     stage_out              0 WAIT, 1 SEARCH, 2 FACE, 3 APPROACH, 4 TURN,
 %                            5 DONE (the numbers beacon.ino prints)
 %
-%   Differences from the sketch: the model has no friction or deadband, so
-%   the last turn ends SETTLE_HOLD_S after its profile finishes (the sketch
-%   waits for the robot itself to settle), and in DONE the references are
-%   held instead of the motors being switched off.
+%   Differences from the sketch: the model has no friction or deadband, and
+%   in DONE the references are held instead of the motors being switched
+%   off, so the model shows no coasting after the last turn.
 %#codegen
 
 persistent stage rho_prof phi_prof rho_target phi_target
 persistent rho_history phi_history head
 persistent marker_phi marker_rho last_seen last_frame votes
-persistent arrived_time pause_since done_since
+persistent arrived_time pause_since
 
 WAIT = 0;  SEARCH = 1;  FACE = 2;  APPROACH = 3;  TURN = 4;  DONE = 5;
 HISTORY_LEN = 32;
@@ -46,7 +45,7 @@ if isempty(stage)
     head = 1;
     marker_phi = 0;  marker_rho = 0;
     last_seen = -1;  last_frame = 0;  votes = 0;
-    arrived_time = -1;  pause_since = -1;  done_since = -1;
+    arrived_time = -1;  pause_since = -1;
 end
 
 %% Odometry history, to match a camera reading with where the robot was
@@ -133,13 +132,9 @@ if stage ~= WAIT && stage ~= DONE
     rho_prof = stepProfile(rho_prof, rho_target, P.MAX_RHO_DOT, P.RHO_ACCEL, P.Ts);
     phi_prof = stepProfile(phi_prof, phi_target, phi_speed, P.PHI_ACCEL, P.Ts);
 
-    if stage == TURN
-        if isequal(rho_prof, [rho_target 0]) && isequal(phi_prof, [phi_target 0])
-            if done_since < 0, done_since = t; end
-            if t - done_since >= P.SETTLE_HOLD_S, stage = DONE; end
-        else
-            done_since = -1;
-        end
+    % The last turn ends as soon as the heading is within TURN_DONE_TOL_DEG
+    if stage == TURN && abs(phi_target - phi) < P.TURN_DONE_TOL_DEG * pi / 180
+        stage = DONE;
     end
 end
 

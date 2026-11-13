@@ -29,7 +29,7 @@ them:
 | search | Turns in place | A message says the marker is visible |
 | face | Turns toward the marker | The marker is within `FACE_TOL_DEG` of straight ahead |
 | approach | Drives at the marker, steering as new readings arrive | It is `STOP_DISTANCE_FT` from the marker |
-| turn | Trial type 2 only: turns 90° the way the arrow points | The turn has settled |
+| turn | Trial type 2 only: turns 90° the way the arrow points | The heading is within `TURN_DONE_TOL_DEG` (10°) of 90°; it coasts the rest |
 | done | Motors off | |
 
 ## Organization
