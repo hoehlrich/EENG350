@@ -19,8 +19,8 @@ SEARCH_DIRECTION = 1;        % +1 search turning left, -1 right
 DEFAULT_TURN     = 1;        % turn if the arrow was never read
 
 %% Camera as the sketch sees it (beacon.ino, "camera")
-CAMERA_OFFSET_M   = 0.03;    % lens ahead of the wheel axis
-CAMERA_SIDE_M     = -0.06;   % lens left of the center line (negative = right)
+CAMERA_OFFSET_M   = 0.105;    % lens ahead of the wheel axis
+CAMERA_SIDE_M     = 0.0;     % lens left of the center line (negative = right)
 CAMERA_LATENCY_MS = 350;     % how old the sketch assumes a reading is
 
 %% Camera as it really is (not in the sketch: the model's camera block)

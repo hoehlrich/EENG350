@@ -42,15 +42,15 @@
 // ------------------------------ the run -------------------------------------
 const bool  TURN_AT_BEACON   = true;     // true: trial type 2, turn 90 deg at the beacon. false: type 1, stop there
 const float STOP_DISTANCE_FT = 0.8;      // stop with the center of rotation this far from the marker (must be < 1.5).
-                                         // The front of the robot (Pi cable) is 8 cm ahead of the center, so it stops ~0.16 m short
+                                         // The front of the robot (the camera) is 10.5 cm ahead of the center, so it stops ~0.14 m short
 const float START_DELAY_S    = 1.0;      // motors off this long after reset
 const int   SEARCH_DIRECTION = 1;        // search turning left (+1, CCW seen from above) or right (-1)
 const int   DEFAULT_TURN     = 1;        // turn to make if the arrow was never read: +1 left, -1 right
 
 // ------------------------------ camera --------------------------------------
 // Where the camera lens is, from the center of rotation (measured)
-const float CAMERA_OFFSET_M = 0.03;      // ahead of the line between the wheels
-const float CAMERA_SIDE_M   = -0.06;     // to the left of the center line (negative = right)
+const float CAMERA_OFFSET_M = 0.105;     // ahead of the line between the wheels
+const float CAMERA_SIDE_M   = 0.0;       // to the left of the center line (negative = right)
 // How old a reading is when it gets here (exposure + processing + I2C). The
 // reading is matched with where the robot was that long ago. 0 = don't.
 // Measured about 350 ms with demo2.py on the robot (Nov 12 trial log). Set

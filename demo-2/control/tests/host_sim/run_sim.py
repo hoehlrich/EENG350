@@ -40,8 +40,9 @@ HERE = Path(__file__).resolve().parent
 SKETCH = HERE / "../../beacon/beacon.ino"
 
 # The beacon counts as hit if the center of rotation gets this close [ft]:
-# the front of the robot (the Pi cable) is 8 cm (0.26 ft) ahead of the center.
-FRONT_FT = 0.3
+# the front of the robot (the camera) is 10.5 cm ahead of the center, plus
+# about 1 cm for the camera body: 0.115 m = 0.38 ft.
+FRONT_FT = 0.38
 
 SWEEP_HEADINGS = [0, 20, -20, 45, 90, 135, 180, -135, -90, -45]
 SWEEP_DISTANCES = [4, 5, 6]
