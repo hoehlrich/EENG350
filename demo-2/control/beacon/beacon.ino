@@ -64,16 +64,21 @@ const unsigned long CAMERA_LATENCY_MS = 350;
 const float SIGHTING_MAX_TURN = 0.3;     // rad/s
 
 // ------------------------------ search, approach ----------------------------
-// The search turns SEARCH_STEP_DEG quickly, stops, looks for SEARCH_PAUSE_S,
-// and repeats. The camera only detects the marker reliably when the robot is
-// still (while turning, even slowly, the picture is too blurred), so the
-// pause is timed from when the robot has actually stopped: within
-// SEARCH_SETTLE_DEG of the step's heading. The camera sees about 60 deg, so
-// 45 deg steps overlap. SEARCH_STEP_DEG = 0 turns continuously instead.
-const float SEARCH_PHI_DOT    = 2.25;    // rad/s, turning speed between looks
+// The search turns about SEARCH_STEP_DEG quickly, stops, looks for
+// SEARCH_PAUSE_S, and repeats. The camera only detects the marker reliably
+// when the robot is still (while turning, even slowly, the picture is too
+// blurred). A step need not be exact: once the robot is within
+// SEARCH_SETTLE_DEG of the step's heading it holds wherever it is, instead of
+// creeping onto the exact heading, and the look starts. The camera sees about
+// 58 deg, so steps of 45 +- 5 deg still overlap. SEARCH_STEP_DEG = 0 turns
+// continuously instead. The search turns have their own speed and
+// acceleration; turning to face the marker and the final turn use
+// MAX_PHI_DOT and PHI_ACCEL.
+const float SEARCH_PHI_DOT    = 4.5;     // rad/s, turning speed between looks
+const float SEARCH_PHI_ACCEL  = 18.0;    // rad/s^2: a 45 deg step takes about 0.42 s of turning
 const float SEARCH_STEP_DEG   = 45.0;    // 0: turn continuously. > 0: turn this far, pause to look, repeat
-const float SEARCH_PAUSE_S    = 0.8;     // look this long once stopped. Readings are ~0.25 s old, so ~0.5 s of still pictures
-const float SEARCH_SETTLE_DEG = 2.0;     // counts as stopped within this of the step's heading
+const float SEARCH_PAUSE_S    = 0.8;     // look this long once stopped. Readings are ~0.35 s old, so ~0.4 s of still pictures
+const float SEARCH_SETTLE_DEG = 5.0;     // a step counts as done within this of its heading
 const float MARKER_LOST_S   = 1.5;       // facing where the marker was and not seen for this long: search again
 const float FACE_TOL_DEG    = 5.0;       // start driving once the marker is this close to straight ahead
 const float FACE_RATE       = 0.15;      // ... and the turn has slowed to this [rad/s]
@@ -108,7 +113,7 @@ const float Ki_rho = 2.0;                // (m/s) per m*s
 const float Kp_phi = 4.0;                // (rad/s) per rad
 const float Ki_phi = 2.0;                // (rad/s) per rad*s
 const float RHO_DOT_LIMIT = 0.675;       // limit on rho_dot_d [m/s], 1.5 x MAX_RHO_DOT
-const float PHI_DOT_LIMIT = 3.375;       // limit on phi_dot_d [rad/s], 1.5 x MAX_PHI_DOT
+const float PHI_DOT_LIMIT = 6.75;        // limit on phi_dot_d [rad/s], 1.5 x SEARCH_PHI_DOT
 
 // Reference profile. These set how long a run takes. They are 4.5 times
 // Demo 1's values (0.1 m/s, 0.1 m/s^2, 0.5 rad/s, 1 rad/s^2), which worked
@@ -457,10 +462,16 @@ void loop() {
         } else if (profileDone(phi_prof, phi_target) &&
                    (fabs(phi_target - phi) < SEARCH_SETTLE_RAD ||
                     (profile_done_time >= 0 && current_time - profile_done_time >= 1.0))) {
-            // Stepping: the robot has stopped (or 1 s has passed since the
-            // reference did, in case friction holds it just off). Look for
-            // SEARCH_PAUSE_S (first before moving at all), then step on.
+            // Stepping: the step is done (or 1 s has passed since the
+            // reference finished, in case friction holds it off). Hold the
+            // heading wherever the robot is rather than creeping onto the
+            // exact step heading, look for SEARCH_PAUSE_S (first before moving
+            // at all), then step on from there.
             if (search_pause_since < 0) {
+                phi_target = phi;
+                phi_prof.pos = phi;
+                phi_prof.vel = 0;
+                integral_phi = 0;
                 search_pause_since = current_time;
             } else if (current_time - search_pause_since >= SEARCH_PAUSE_S) {
                 phi_target += SEARCH_DIRECTION * SEARCH_STEP_RAD;
@@ -516,8 +527,9 @@ void loop() {
     if (stage != WAIT && stage != DONE && !stop_now) {
         // 1. Reference
         float phi_speed = (stage == SEARCH) ? SEARCH_PHI_DOT : MAX_PHI_DOT;
+        float phi_accel = (stage == SEARCH) ? SEARCH_PHI_ACCEL : PHI_ACCEL;
         stepProfile(rho_prof, rho_target, MAX_RHO_DOT, RHO_ACCEL, dt);
-        stepProfile(phi_prof, phi_target, phi_speed, PHI_ACCEL, dt);
+        stepProfile(phi_prof, phi_target, phi_speed, phi_accel, dt);
         bool rho_done = profileDone(rho_prof, rho_target);
         bool phi_done = profileDone(phi_prof, phi_target);
         bool profiles_done = rho_done && phi_done;

@@ -31,10 +31,11 @@ CAM_LATENCY_S    = 0.35;     % picture taken -> message at the Arduino
 CAM_ARROW_RANGE_M = 2.5;     % arrow can't be read beyond this
 
 %% Search and approach (beacon.ino, "search, approach")
-SEARCH_PHI_DOT  = 2.25;       % rad/s
+SEARCH_PHI_DOT  = 4.5;        % rad/s
+SEARCH_PHI_ACCEL = 18.0;     % rad/s^2, search turns only
 SEARCH_STEP_DEG = 45.0;      % 0: turn continuously. > 0: turn this far, pause, repeat
 SEARCH_PAUSE_S  = 0.8;       % s, timed from when the robot has stopped
-SEARCH_SETTLE_DEG = 2.0;     % deg, counts as stopped within this of the step's heading
+SEARCH_SETTLE_DEG = 5.0;     % deg, a step counts as done within this of its heading
 MARKER_LOST_S   = 1.5;       % s
 FACE_TOL_DEG    = 5.0;       % deg
 FACE_RATE       = 0.15;      % rad/s
@@ -64,7 +65,7 @@ Ki_rho = 2.0;                % (m/s) per m*s
 Kp_phi = 4.0;                % (rad/s) per rad
 Ki_phi = 2.0;                % (rad/s) per rad*s
 RHO_DOT_LIMIT = 0.675;       % m/s
-PHI_DOT_LIMIT = 3.375;       % rad/s
+PHI_DOT_LIMIT = 6.75;        % rad/s
 
 % Reference profile
 MAX_RHO_DOT = 0.45;          % m/s
@@ -84,7 +85,7 @@ P = struct();
 for name = ["BEACON_HEADING_DEG" "BEACON_DISTANCE_FT" "ARROW" "TURN_AT_BEACON" ...
             "STOP_DISTANCE_FT" "START_DELAY_S" "SEARCH_DIRECTION" "DEFAULT_TURN" ...
             "CAMERA_OFFSET_M" "CAMERA_SIDE_M" "CAMERA_LATENCY_MS" "CAM_FOV_DEG" "CAM_RANGE_M" ...
-            "CAM_PERIOD_S" "CAM_LATENCY_S" "CAM_ARROW_RANGE_M" "SEARCH_PHI_DOT" ...
+            "CAM_PERIOD_S" "CAM_LATENCY_S" "CAM_ARROW_RANGE_M" "SEARCH_PHI_DOT" "SEARCH_PHI_ACCEL" ...
             "SEARCH_STEP_DEG" "SEARCH_PAUSE_S" "SEARCH_SETTLE_DEG" "MARKER_LOST_S" "FACE_TOL_DEG" ...
             "FACE_RATE" "ARRIVE_TOL_M" "ARRIVE_SPEED" "ARROW_MIN_VOTES" ...
             "ARROW_MAX_VOTES" "ARROW_WAIT_S" "MAX_RHO_DOT" "RHO_ACCEL" ...

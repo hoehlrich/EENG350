@@ -83,6 +83,7 @@ if stage == SEARCH
     elseif isequal(phi_prof, [phi_target 0]) && abs(phi_target - phi) < P.SEARCH_SETTLE_DEG * pi / 180
         % stopped on the step (the sketch also gives up waiting after 1 s)
         if pause_since < 0
+            phi_target = phi;  phi_prof = [phi 0];     % hold where it stopped
             pause_since = t;
         elseif t - pause_since >= P.SEARCH_PAUSE_S
             phi_target = phi_target + P.SEARCH_DIRECTION * P.SEARCH_STEP_DEG * pi / 180;
@@ -127,10 +128,10 @@ end
 
 %% Reference profiles
 if stage ~= WAIT && stage ~= DONE
-    phi_speed = P.MAX_PHI_DOT;
-    if stage == SEARCH, phi_speed = P.SEARCH_PHI_DOT; end
+    phi_speed = P.MAX_PHI_DOT;  phi_accel = P.PHI_ACCEL;
+    if stage == SEARCH, phi_speed = P.SEARCH_PHI_DOT;  phi_accel = P.SEARCH_PHI_ACCEL; end
     rho_prof = stepProfile(rho_prof, rho_target, P.MAX_RHO_DOT, P.RHO_ACCEL, P.Ts);
-    phi_prof = stepProfile(phi_prof, phi_target, phi_speed, P.PHI_ACCEL, P.Ts);
+    phi_prof = stepProfile(phi_prof, phi_target, phi_speed, phi_accel, P.Ts);
 
     % The last turn ends as soon as the heading is within TURN_DONE_TOL_DEG
     if stage == TURN && abs(phi_target - phi) < P.TURN_DONE_TOL_DEG * pi / 180
