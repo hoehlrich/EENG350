@@ -121,7 +121,8 @@ const float PHI_DOT_LIMIT = 6.75;        // limit on phi_dot_d [rad/s], 1.5 x SE
 // 0.3 m/s^2, 1.5 rad/s, 3 rad/s^2), which also worked. If the wheels slip,
 // lower the two ACCELs first.
 const float MAX_RHO_DOT = 0.45;          // m/s
-const float RHO_ACCEL   = 0.45;          // m/s^2
+const float RHO_ACCEL   = 1.35;          // m/s^2: up to MAX_RHO_DOT, or back to a stop, in 0.33 s. If the
+                                         // wheels slip or the robot lurches, 0.9 gives most of the gain
 const float MAX_PHI_DOT = 2.25;          // rad/s
 const float PHI_ACCEL   = 4.5;           // rad/s^2
 

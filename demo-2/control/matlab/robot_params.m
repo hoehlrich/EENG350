@@ -69,7 +69,7 @@ PHI_DOT_LIMIT = 6.75;        % rad/s
 
 % Reference profile
 MAX_RHO_DOT = 0.45;          % m/s
-RHO_ACCEL   = 0.45;          % m/s^2
+RHO_ACCEL   = 1.35;          % m/s^2
 MAX_PHI_DOT = 2.25;          % rad/s
 PHI_ACCEL   = 4.5;           % rad/s^2
 
