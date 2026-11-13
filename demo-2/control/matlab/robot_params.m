@@ -13,7 +13,7 @@ ARROW              = 1;      % 1 = arrow points left, 2 = right
 
 %% The run (beacon.ino, "the run")
 TURN_AT_BEACON   = true;     % true: trial type 2, turn 90 deg at the beacon
-STOP_DISTANCE_FT = 0.8;      % stop with the center of rotation this far from the marker
+STOP_DISTANCE_FT = 1.0;      % stop with the center of rotation this far from the marker
 START_DELAY_S    = 0.2;      % s
 SEARCH_DIRECTION = 1;        % +1 search turning left, -1 right
 DEFAULT_TURN     = 1;        % turn if the arrow was never read
@@ -64,11 +64,11 @@ Kp_rho = 3.0;                % (m/s) per m
 Ki_rho = 2.0;                % (m/s) per m*s
 Kp_phi = 4.0;                % (rad/s) per rad
 Ki_phi = 2.0;                % (rad/s) per rad*s
-RHO_DOT_LIMIT = 0.675;       % m/s
+RHO_DOT_LIMIT = 0.9;       % m/s
 PHI_DOT_LIMIT = 6.75;        % rad/s
 
 % Reference profile
-MAX_RHO_DOT = 0.45;          % m/s
+MAX_RHO_DOT = 0.6;          % m/s
 RHO_ACCEL   = 1.35;          % m/s^2
 MAX_PHI_DOT = 2.25;          % rad/s
 PHI_ACCEL   = 4.5;           % rad/s^2

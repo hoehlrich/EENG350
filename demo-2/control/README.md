@@ -97,12 +97,12 @@ All at the top of `beacon.ino`. The ones to look at first:
 | Constant | Value | What it is |
 |----------|-------|------------|
 | `TURN_AT_BEACON` | `true` | `true` for trial type 2, `false` for type 1 |
-| `STOP_DISTANCE_FT` | 0.8 | Center of rotation to marker at the stop. Must be under 1.5, and big enough that the front of the robot (the Pi cable, 8 cm ahead of the center) stays off the beacon: it stops about 0.16 m short |
+| `STOP_DISTANCE_FT` | 1.0 | Center of rotation to marker at the stop. Must be under 1.5. The camera, 10.5 cm ahead of the center, is the front of the robot: it stops about 0.2 m short, and at least 5 cm short in simulation even when the camera delay is 0.1 s longer than assumed |
 | `CAMERA_OFFSET_M` | 0.10 | **Measure:** camera lens ahead of the line between the wheels |
 | `CAMERA_LATENCY_MS` | 80 | Guess at the age of a reading. See the table under "Bringing it up" |
 | `SEARCH_STEP_DEG`, `SEARCH_PHI_DOT`, `SEARCH_PHI_ACCEL` | 45°, 4.5 rad/s, 18 rad/s² | The search turns about 45° (0.5 s of turning), stops, looks, and repeats. Its own speed and acceleration: turning to face the marker and the final turn use `MAX_PHI_DOT` and `PHI_ACCEL`. The camera sees about 60°, so the steps overlap. The camera can't detect the marker while the robot turns, even slowly. 0 = turn continuously |
 | `SEARCH_PAUSE_S`, `SEARCH_SETTLE_DEG` | 0.8 s, 5° | Once the robot is within 5° of the step's heading it holds wherever it is (it doesn't creep onto the exact heading) and looks for 0.8 s. Sightings only count once it has been still for the camera delay |
-| `MAX_RHO_DOT`, `RHO_ACCEL` | 0.45 m/s, 1.35 m/s² | Top speed 4.5 times Demo 1's. Gets up to speed and stops again in 0.33 s. A type 2 trial takes 3.8 to 14.3 s in simulation (mean 8.3 s) |
+| `MAX_RHO_DOT`, `RHO_ACCEL` | 0.6 m/s, 1.35 m/s² | Top speed 6 times Demo 1's. Gets up to speed and stops again in under 0.5 s. A type 2 trial takes 3.2 to 13.5 s in simulation (mean 7.6 s). Faster overshoots more when the camera delay is off, which is why the stop is 1.0 ft |
 | `MAX_PHI_DOT`, `PHI_ACCEL` | 2.25 rad/s, 4.5 rad/s² | 4.5 times Demo 1's values, 1.5 times the Nov 12 trials' |
 | `MAX_VOLTAGE` | 5 V | Cap on each wheel. These speeds need up to about 4.4 V in simulation |
 
