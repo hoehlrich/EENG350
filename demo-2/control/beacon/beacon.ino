@@ -77,7 +77,18 @@ const float SIGHTING_MAX_TURN = 0.3;     // rad/s
 const float SEARCH_PHI_DOT    = 4.5;     // rad/s, turning speed between looks
 const float SEARCH_PHI_ACCEL  = 18.0;    // rad/s^2: a 45 deg step takes about 0.42 s of turning
 const float SEARCH_STEP_DEG   = 45.0;    // 0: turn continuously. > 0: turn this far, pause to look, repeat
-const float SEARCH_PAUSE_S    = 0.8;     // look this long once stopped. Readings are ~0.35 s old, so ~0.4 s of still pictures
+// Adaptive look (adaptive-wait branch): a look ends once LOOK_FRAMES frames
+// have arrived that were taken after the robot stopped (turning slower than
+// LOOK_STILL_TURN) without the marker in them. So it lasts about the
+// camera delay plus LOOK_FRAMES frames, whatever the frame rate. With 30% of
+// frames missing a marker that is in view, 4 frames all miss 0.8% of the
+// time. In simulation this saves about 0.25 s a trial at 21 frames/s, breaks
+// even at 15 and loses about 0.3 s at 10, compared with a fixed 0.8 s look. SEARCH_PAUSE_S is only an upper limit, in case frames stop arriving.
+const int   LOOK_FRAMES       = 4;       // usable frames without the marker before stepping on
+const float LOOK_STILL_TURN   = 0.05;    // rad/s: a frame is usable only if the robot turned slower than this.
+                                         // Looser and the frames from the creep after a hard stop count, though
+                                         // they are too blurred to show the marker
+const float SEARCH_PAUSE_S    = 1.5;     // longest look, if frames are slow or stop arriving
 const float SEARCH_SETTLE_DEG = 5.0;     // a step counts as done within this of its heading
 const float MARKER_LOST_S   = 1.5;       // facing where the marker was and not seen for this long: search again
 const float FACE_TOL_DEG    = 5.0;       // start driving once the marker is this close to straight ahead
@@ -292,11 +303,11 @@ const int LATENCY_SAMPLES = min((int)(CAMERA_LATENCY_MS / desired_Ts_ms), HISTOR
 float rho_history[HISTORY_LEN], phi_history[HISTORY_LEN];
 int history_head = 0;           // index of the newest sample
 
-// True if the robot turned faster than SIGHTING_MAX_TURN at any time from
+// True if the robot turned faster than max_rate [rad/s] at any time from
 // 50 ms before the newest picture was taken until now (in 50 ms steps)
-bool turnedSinceLastPicture() {
+bool turnedSinceLastPicture(float max_rate) {
     const int STEP = 5;                                   // samples = 50 ms
-    const float max_change = SIGHTING_MAX_TURN * STEP * desired_Ts_ms / 1000.0;
+    const float max_change = max_rate * STEP * desired_Ts_ms / 1000.0;
     for (int k = 0; k + STEP <= LATENCY_SAMPLES + STEP; k++) {
         int a = (history_head + HISTORY_LEN - k) % HISTORY_LEN;
         int b = (history_head + HISTORY_LEN - k - STEP) % HISTORY_LEN;
@@ -314,6 +325,7 @@ float cam_distance_m = 0;
 int arrow_votes = 0;            // > 0: arrow points left, < 0: right
 float arrived_time = -1;        // time the robot reached the stop point, -1 if not yet
 float search_pause_since = -1;  // time the current search pause began, -1 if turning
+int look_frames = 0;            // usable frames seen in the current look
 
 // The driver pulls its status flag LOW on a fault (overcurrent, short,
 // overheating, battery too low). Some faults latch the outputs off, which
@@ -427,14 +439,18 @@ void loop() {
     // in odometry coordinates right away, so nothing below ever uses a stale
     // camera angle.
     MarkerMsg msg;
-    bool got = readMarker(msg) && msg.visible;
+    bool fresh = readMarker(msg);                       // a new message, marker or not
+    bool got = fresh && msg.visible;
     if (got) {
         cam_angle_deg  = msg.angle_cdeg / 100.0;    // printed even if not used
         cam_distance_m = msg.distance_mm / 1000.0;
         if (msg.arrow == ARROW_LEFT)  arrow_votes = min(arrow_votes + 1,  ARROW_MAX_VOTES);
         if (msg.arrow == ARROW_RIGHT) arrow_votes = max(arrow_votes - 1, -ARROW_MAX_VOTES);
     }
-    bool seen = got && !turnedSinceLastPicture();
+    bool seen = got && !turnedSinceLastPicture(SIGHTING_MAX_TURN);
+    // For the adaptive look: the picture was taken with the robot really still,
+    // slow enough that a marker in view would not be blurred
+    bool still_picture = !turnedSinceLastPicture(LOOK_STILL_TURN);
     if (seen) {
         float angle = cam_angle_deg * PI / 180.0;
         // Marker position seen from the center of rotation: x ahead, y left.
@@ -466,15 +482,18 @@ void loop() {
             // Stepping: the step is done (or 1 s has passed since the
             // reference finished, in case friction holds it off). Hold the
             // heading wherever the robot is rather than creeping onto the
-            // exact step heading, look for SEARCH_PAUSE_S (first before moving
-            // at all), then step on from there.
+            // exact step heading, look until LOOK_FRAMES usable frames have
+            // come without the marker (first before moving at all), then
+            // step on from there.
             if (search_pause_since < 0) {
                 phi_target = phi;
                 phi_prof.pos = phi;
                 phi_prof.vel = 0;
                 integral_phi = 0;
                 search_pause_since = current_time;
-            } else if (current_time - search_pause_since >= SEARCH_PAUSE_S) {
+                look_frames = 0;
+            } else if ((fresh && still_picture && ++look_frames >= LOOK_FRAMES) ||
+                       current_time - search_pause_since >= SEARCH_PAUSE_S) {
                 phi_target += SEARCH_DIRECTION * SEARCH_STEP_RAD;
                 search_pause_since = -1;
             }

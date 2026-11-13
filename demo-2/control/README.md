@@ -101,7 +101,7 @@ All at the top of `beacon.ino`. The ones to look at first:
 | `CAMERA_OFFSET_M` | 0.10 | **Measure:** camera lens ahead of the line between the wheels |
 | `CAMERA_LATENCY_MS` | 80 | Guess at the age of a reading. See the table under "Bringing it up" |
 | `SEARCH_STEP_DEG`, `SEARCH_PHI_DOT`, `SEARCH_PHI_ACCEL` | 45°, 4.5 rad/s, 18 rad/s² | The search turns about 45° (0.5 s of turning), stops, looks, and repeats. Its own speed and acceleration: turning to face the marker and the final turn use `MAX_PHI_DOT` and `PHI_ACCEL`. The camera sees about 60°, so the steps overlap. The camera can't detect the marker while the robot turns, even slowly. 0 = turn continuously |
-| `SEARCH_PAUSE_S`, `SEARCH_SETTLE_DEG` | 0.8 s, 5° | Once the robot is within 5° of the step's heading it holds wherever it is (it doesn't creep onto the exact heading) and looks for 0.8 s. Sightings only count once it has been still for the camera delay |
+| `LOOK_FRAMES`, `LOOK_STILL_TURN`, `SEARCH_PAUSE_S`, `SEARCH_SETTLE_DEG` | 4, 0.05 rad/s, 1.5 s, 5° | Once the robot is within 5° of the step's heading it holds wherever it is and looks. The look ends after 4 frames taken with the robot turning slower than 0.05 rad/s show no marker, or after 1.5 s at most. That is the camera delay (~0.35 s) plus 4 frames, whatever the frame rate (adaptive-wait branch; `main` looks for a fixed 0.8 s) |
 | `MAX_RHO_DOT`, `RHO_ACCEL` | 0.75 m/s, 1.35 m/s² | Top speed 7.5 times Demo 1's. Gets up to speed and stops again in about 0.55 s. A type 2 trial takes 3.2 to 13.7 s in simulation (mean 7.7 s) |
 | `MAX_PHI_DOT`, `PHI_ACCEL` | 2.25 rad/s, 4.5 rad/s² | 4.5 times Demo 1's values, 1.5 times the Nov 12 trials' |
 | `MAX_VOLTAGE` | 6 V | Cap on each wheel. Holding 0.75 m/s takes about 5 V |
